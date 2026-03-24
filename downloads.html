@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Downloads — Jake Lewien</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+
+    /* ── Download section ─────────────────────────────────── */
+    .dl-section {
+      margin-bottom: 3.5rem;
+    }
+
+    /* ── Download card ────────────────────────────────────── */
+    .dl-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+    }
+
+    .dl-card:hover {
+      border-color: var(--blue-mid);
+      box-shadow: 0 0 0 1px var(--blue-dim), 0 16px 60px rgba(77, 166, 255, 0.18), 0 0 100px rgba(77, 166, 255, 0.05);
+      transform: translateY(-7px);
+    }
+
+    .dl-card-header {
+      padding: 1.5rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .dl-card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .dl-card-meta h2 {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .dl-card-meta p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 540px;
+    }
+
+    .dl-card-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .dl-project-link {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .dl-project-link:hover {
+      color: var(--blue-bright);
+    }
+
+    /* ── File list ────────────────────────────────────────── */
+    .dl-group {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dl-group:last-child {
+      border-bottom: none;
+    }
+
+    .dl-group-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      margin-bottom: 0.85rem;
+    }
+
+    .dl-file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .dl-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      gap: 1rem;
+      transition: border-color 0.2s;
+      text-decoration: none;
+    }
+
+    .dl-file:hover {
+      border-color: var(--blue-mid);
+    }
+
+    .dl-file-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+    }
+
+    .dl-file-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .dl-file-type {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      background: var(--surface);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .dl-arrow {
+      color: var(--blue-bright);
+      font-size: 0.9rem;
+      opacity: 0.6;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .dl-file:hover .dl-arrow {
+      opacity: 1;
+      transform: translateY(2px);
+    }
+
+    /* ── Collapsible toggle ───────────────────────────────── */
+    .dl-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0.25rem;
+      transition: color 0.2s, transform 0.25s ease;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 0.2rem;
+    }
+
+    .dl-toggle:hover {
+      color: var(--text);
+    }
+
+    .dl-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .dl-card-body {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.25s ease;
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    .dl-card-body.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+
+    /* ── Coming soon card ─────────────────────────────────── */
+    .coming-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      position: relative;
+      z-index: 1;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+    }
+
+    .coming-card:hover {
+      border-color: var(--blue-mid);
+      box-shadow: 0 0 0 1px var(--blue-dim), 0 16px 60px rgba(77, 166, 255, 0.18), 0 0 100px rgba(77, 166, 255, 0.05);
+      transform: translateY(-7px);
+    }
+
+    .coming-card-info h2 {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+    }
+
+    .coming-card-info p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 640px) {
+      .dl-card-header   { flex-direction: column; }
+      .dl-card-actions  { align-items: flex-start; }
+      .dl-group         { padding: 1rem 1.25rem; }
+    }
+
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="nav-name">Jake Lewien</span>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="downloads.html" class="active">Downloads</a>
+      <a href="nfc-macros.html">NFC Macros</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1>Downloads</h1>
+    <p class="subtitle">Free files from completed projects.</p>
+
+    <!-- 3D Print Files -->
+    <div class="dl-section">
+      <h2 class="section-heading">3D Print Files</h2>
+
+      <div class="dl-card" id="chess">
+
+        <div class="dl-card-header">
+          <div class="dl-card-meta">
+            <div class="card-tag">3D Design / Fabrication</div>
+            <h2>Minimalist Chess Set</h2>
+            <p>All STL files for the board, tiles, drawer, and all six piece types. Single-extrusion friendly — each color is a separate print. Fully scalable.</p>
+          </div>
+          <div class="dl-card-actions">
+            <a href="downloads/chess/Chess-Set-STLs.zip" download class="btn">Download All (.zip)</a>
+            <a href="project-chess.html" class="dl-project-link">View project &rarr;</a>
+          </div>
+          <button class="dl-toggle" aria-label="Toggle files" onclick="toggleCard(this)">&#8964;</button>
+        </div>
+
+        <div class="dl-card-body">
+        <div class="dl-group">
+          <div class="dl-group-title">Board</div>
+          <div class="dl-file-list">
+            <a href="downloads/chess/Chess Board.stl" download class="dl-file">
+              <span class="dl-file-name">Chess Board</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+            <a href="downloads/chess/Board Square.stl" download class="dl-file">
+              <span class="dl-file-name">Board Square</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+            <a href="downloads/chess/Drawer.stl" download class="dl-file">
+              <span class="dl-file-name">Drawer</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="dl-group">
+          <div class="dl-group-title">Pieces</div>
+          <div class="dl-file-list">
+            <a href="downloads/chess/King.stl" download class="dl-file">
+              <span class="dl-file-name">King</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+            <a href="downloads/chess/Queen.stl" download class="dl-file">
+              <span class="dl-file-name">Queen</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+            <a href="downloads/chess/Bishop.stl" download class="dl-file">
+              <span class="dl-file-name">Bishop</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+            <a href="downloads/chess/Knight.stl" download class="dl-file">
+              <span class="dl-file-name">Knight</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+            <a href="downloads/chess/Rook.stl" download class="dl-file">
+              <span class="dl-file-name">Rook</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+            <a href="downloads/chess/Pawn.stl" download class="dl-file">
+              <span class="dl-file-name">Pawn</span>
+              <div class="dl-file-right">
+                <span class="dl-file-type">STL</span>
+                <span class="dl-arrow">&#8595;</span>
+              </div>
+            </a>
+          </div>
+        </div>
+        </div><!-- /.dl-card-body -->
+
+      </div>
+    </div>
+
+    <!-- Software (coming soon) -->
+    <div class="dl-section">
+      <h2 class="section-heading">Software</h2>
+      <div class="coming-card">
+        <div class="coming-card-info">
+          <h2>Fracture Companion App</h2>
+          <p>Per-device RGB profiles, macro layers, and live configuration for Fracture keyboards.</p>
+        </div>
+        <span class="status coming-soon">Coming Soon</span>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Jake Lewien</p>
+  </footer>
+
+  <script>
+    function toggleCard(btn) {
+      const body = btn.closest('.dl-card').querySelector('.dl-card-body');
+      const collapsed = body.classList.toggle('collapsed');
+      btn.classList.toggle('collapsed', collapsed);
+      btn.setAttribute('aria-label', collapsed ? 'Expand files' : 'Collapse files');
+    }
+
+    // Auto-expand card if URL has matching anchor
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.location.hash) {
+        const target = document.querySelector(window.location.hash);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
+  </script>
+  <script src="motion.js"></script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimalist Chess Set — Jake Lewien</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+
+    /* ── Gallery ─────────────────────────────────────────── */
+    .gallery {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 2.5rem;
+    }
+
+    .gallery-hero {
+      width: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #0d0d14;
+      cursor: pointer;
+    }
+
+    .gallery-hero img {
+      width: 100%;
+      height: 480px;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .gallery-hero:hover img {
+      transform: scale(1.02);
+    }
+
+    .gallery-row {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .gallery-row.two   { grid-template-columns: 1fr 1fr; }
+    .gallery-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+    .gallery-thumb {
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #0d0d14;
+      cursor: pointer;
+    }
+
+    .gallery-thumb img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.35s ease;
+    }
+
+    .gallery-thumb:hover img {
+      transform: scale(1.04);
+    }
+
+    .gallery-caption {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: 0.35rem;
+    }
+
+    /* ── Lightbox ─────────────────────────────────────────── */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+
+    .lightbox.open {
+      display: flex;
+    }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.8);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.75rem;
+      color: rgba(255,255,255,0.5);
+      font-size: 1.75rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.2s;
+      background: none;
+      border: none;
+    }
+
+    .lightbox-close:hover {
+      color: #fff;
+    }
+
+    /* ── Project downloads ────────────────────────────────── */
+    .project-dl-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .gallery-hero img   { height: 260px; }
+      .gallery-thumb img  { height: 160px; }
+      .gallery-row.three  { grid-template-columns: 1fr 1fr; }
+      .gallery-row.two    { grid-template-columns: 1fr; }
+    }
+
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="nav-name">Jake Lewien</span>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="projects.html" class="active">Projects</a>
+      <a href="downloads.html">Downloads</a>
+      <a href="nfc-macros.html">NFC Macros</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <a href="projects.html" class="back-link">&larr; All Projects</a>
+
+    <div class="project-header">
+      <div class="card-tag">3D Design / Fabrication</div>
+      <h1>Minimalist Chess Set</h1>
+      <span class="status complete">Complete</span>
+    </div>
+
+    <div class="project-body">
+      <p>A fully original chess set designed from scratch in CAD and 3D printed as a gift. Every piece uses a clean geometric language — identifiable by silhouette without relying on decorative curves or traditional iconography. The design prioritizes clarity, printability, and elegance over ornamentation.</p>
+      <p>The board is a self-contained unit: the playing surface sits on top of a sliding drawer that stores all 32 pieces in custom-fitted slots, so nothing needs a separate box. The whole set can be scaled up or down without any redesign, and because each color is a standalone print, it works on any single-extrusion FDM printer.</p>
+    </div>
+
+    <div class="tech-tags">
+      <span class="tech-tag">CAD Design</span>
+      <span class="tech-tag">FDM 3D Printing</span>
+      <span class="tech-tag">Single-Extrusion</span>
+      <span class="tech-tag">Scalable Design</span>
+      <span class="tech-tag">Integrated Storage</span>
+    </div>
+
+    <!-- Downloads -->
+    <div class="project-downloads">
+      <h2 class="section-heading" style="margin-top: 2.5rem;">Downloads</h2>
+      <div class="project-dl-row">
+        <a href="downloads/chess/Chess-Set-STLs.zip" download class="btn">Download All STLs (.zip)</a>
+        <a href="downloads.html#chess" class="btn btn-secondary">View all files &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery">
+
+      <!-- Hero -->
+      <div class="gallery-hero" onclick="openLightbox('images/chess/Chess Board Set Up.JPG')">
+        <img src="images/chess/Chess Board Set Up.JPG" alt="Chess set fully assembled and set up for play">
+      </div>
+
+      <!-- Board shots -->
+      <div class="gallery-row two">
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/Chess Board.JPG')">
+            <img src="images/chess/Chess Board.JPG" alt="Chess board closed">
+          </div>
+          <p class="gallery-caption">Board — Closed</p>
+        </div>
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/Chess Board Open.JPG')">
+            <img src="images/chess/Chess Board Open.JPG" alt="Chess board open showing piece drawer">
+          </div>
+          <p class="gallery-caption">Piece Drawer — Open</p>
+        </div>
+      </div>
+
+      <!-- Individual pieces -->
+      <h2 class="section-title" style="margin-top:1rem;">The Pieces</h2>
+      <div class="gallery-row three">
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/King.JPG')">
+            <img src="images/chess/King.JPG" alt="King pieces">
+          </div>
+          <p class="gallery-caption">King</p>
+        </div>
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/Queen.JPG')">
+            <img src="images/chess/Queen.JPG" alt="Queen pieces">
+          </div>
+          <p class="gallery-caption">Queen</p>
+        </div>
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/Bishop.JPG')">
+            <img src="images/chess/Bishop.JPG" alt="Bishop pieces">
+          </div>
+          <p class="gallery-caption">Bishop</p>
+        </div>
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/Knight.JPG')">
+            <img src="images/chess/Knight.JPG" alt="Knight pieces">
+          </div>
+          <p class="gallery-caption">Knight</p>
+        </div>
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/Rook.JPG')">
+            <img src="images/chess/Rook.JPG" alt="Rook pieces">
+          </div>
+          <p class="gallery-caption">Rook</p>
+        </div>
+        <div>
+          <div class="gallery-thumb" onclick="openLightbox('images/chess/Pawn.JPG')">
+            <img src="images/chess/Pawn.JPG" alt="Pawn pieces">
+          </div>
+          <p class="gallery-caption">Pawn</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Jake Lewien</p>
+  </footer>
+
+  <script>
+    function openLightbox(src) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+  </script>
+  <script src="motion.js"></script>
+</body>
+</html>

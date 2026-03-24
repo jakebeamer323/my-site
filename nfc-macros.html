@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFC Macro Builder — Jake Lewien</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .builder-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    @media (max-width: 720px) { .builder-layout { grid-template-columns: 1fr; } }
+
+    .section-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--blue-mid);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .input-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .input-group label { font-size: 0.85rem; color: var(--text-muted); }
+
+    input[type="text"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 0.55rem 0.85rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--blue-mid); }
+    input[type="text"]::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Type selector */
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .type-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      padding: 0.6rem 0.5rem;
+      font-size: 0.82rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .type-btn .type-icon { font-size: 1.2rem; }
+    .type-btn:hover { border-color: var(--blue-mid); color: var(--text); }
+    .type-btn.active { background: var(--blue-dim); border-color: var(--blue-mid); color: var(--blue-bright); }
+
+    /* Autocomplete */
+    .autocomplete-wrap { position: relative; }
+    .suggestions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--blue-mid);
+      border-radius: 6px;
+      z-index: 100;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .suggestion-item {
+      padding: 0.5rem 0.85rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text);
+    }
+    .suggestion-item:hover { background: var(--blue-dim); }
+    .suggestion-known { font-size: 0.72rem; color: var(--blue-bright); white-space: nowrap; }
+
+    /* Command preview */
+    .cmd-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.85rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      min-height: 2.2rem;
+      margin-bottom: 1rem;
+      word-break: break-all;
+    }
+    .cmd-preview.has-value { color: var(--blue-light); }
+
+    .hint { font-size: 0.78rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem; line-height: 1.5; }
+
+    /* Key pills */
+    .key-pill {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      padding: 0.25rem 0.6rem;
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .key-pill:hover { border-color: var(--blue-mid); color: var(--blue-bright); }
+
+    .key-tag {
+      background: var(--blue-dim);
+      border: 1px solid var(--blue-mid);
+      border-radius: 5px;
+      color: var(--blue-bright);
+      padding: 0.2rem 0.55rem;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .key-tag-remove {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      line-height: 1;
+    }
+    .key-tag-remove:hover { color: #ff6b6b; }
+
+    /* Buttons */
+    .btn-sm { padding: 0.45rem 1rem; font-size: 0.85rem; }
+    .btn-danger {
+      background: transparent;
+      color: #ff6b6b;
+      border: 1px solid #3a1a1a;
+      border-radius: 6px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-danger:hover { background: rgba(255,107,107,0.15); border-color: #ff6b6b; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-ghost:hover { border-color: var(--blue-mid); color: var(--text); }
+
+    /* Steps list (while building) */
+    .steps-building {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    .step-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.55rem 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .step-num {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--blue-bright);
+      background: var(--blue-dim);
+      border-radius: 4px;
+      padding: 0.15rem 0.45rem;
+      flex-shrink: 0;
+    }
+    .step-label {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .step-cmd {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'Courier New', monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+    }
+
+    .add-step-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .divider-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1rem 0 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .divider-label::before, .divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Saved macro list */
+    .macro-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
+    .macro-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+    .macro-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.4rem;
+    }
+    .macro-item-name { font-size: 0.9rem; font-weight: 600; color: var(--blue-bright); }
+    .macro-item-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .macro-step-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .macro-step-num {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--blue-mid);
+      background: var(--blue-dim);
+      border-radius: 3px;
+      padding: 0.1rem 0.35rem;
+      flex-shrink: 0;
+    }
+
+    /* Output */
+    .output-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      position: relative;
+    }
+    .output-box pre {
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 0.6rem; right: 0.6rem;
+      background: var(--blue-dim);
+      color: var(--blue-bright);
+      border: 1px solid var(--blue-dim);
+      border-radius: 5px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .copy-btn:hover { background: var(--blue-mid); color: #fff; }
+    .copy-btn.copied { background: rgba(77,166,255,0.2); color: #7ec8ff; }
+
+    /* URL list */
+    .url-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.25rem; }
+    .url-entry {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .url-entry-name { font-size: 0.8rem; color: var(--blue-bright); font-weight: 600; white-space: nowrap; min-width: 90px; }
+    .url-entry-url {
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .url-copy-btn {
+      background: var(--blue-dim);
+      color: var(--blue-bright);
+      border: 1px solid var(--blue-dim);
+      border-radius: 5px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .url-copy-btn:hover { background: var(--blue-mid); color: #fff; }
+    .url-copy-btn.copied { background: rgba(77,166,255,0.2); color: #7ec8ff; }
+
+    .empty-state {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      text-align: center;
+      padding: 1.5rem;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+
+    .ip-row { display: flex; gap: 0.75rem; align-items: flex-end; margin-bottom: 1.5rem; }
+    .ip-row .input-group { flex: 1; margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="nav-name">Jake Lewien</span>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="downloads.html">Downloads</a>
+      <a href="nfc-macros.html" class="active">NFC Macros</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1>NFC Macro Builder</h1>
+    <p class="subtitle">Build macros for your NFC tap-to-run PC automation setup. Everything saves to your browser automatically.</p>
+
+    <!-- PC IP Setting -->
+    <div class="panel" style="margin-bottom: 1.5rem;">
+      <div class="section-label">PC Settings</div>
+      <div class="ip-row">
+        <div class="input-group">
+          <label for="pc-ip">Your PC's Local IP Address</label>
+          <input type="text" id="pc-ip" placeholder="e.g. 192.168.1.50" maxlength="40">
+        </div>
+        <div class="input-group" style="min-width:80px;">
+          <label for="pc-port">Port</label>
+          <input type="text" id="pc-port" placeholder="8080" maxlength="6">
+        </div>
+      </div>
+      <p style="font-size:0.8rem; color:var(--text-muted);">
+        Find your PC's IP: open Command Prompt and run <code style="color:var(--blue-bright);">ipconfig</code> — look for <em>IPv4 Address</em> under your Wi-Fi adapter.
+      </p>
+    </div>
+
+    <div class="builder-layout">
+
+      <!-- Left: Form -->
+      <div>
+        <div class="panel">
+          <div class="section-label">Create a Macro</div>
+
+          <!-- Macro name -->
+          <div class="input-group">
+            <label for="macro-name">Macro Name</label>
+            <input type="text" id="macro-name" placeholder="e.g. morning_routine">
+          </div>
+
+          <!-- Steps built so far -->
+          <div id="steps-building" class="steps-building" style="display:none;"></div>
+
+          <div class="divider-label" id="step-divider">Add a Step</div>
+
+          <!-- Type selector -->
+          <div class="type-grid">
+            <button class="type-btn active" data-type="app" onclick="setType('app')">
+              <span class="type-icon">🖥️</span>Open App
+            </button>
+            <button class="type-btn" data-type="website" onclick="setType('website')">
+              <span class="type-icon">🌐</span>Website
+            </button>
+            <button class="type-btn" data-type="folder" onclick="setType('folder')">
+              <span class="type-icon">📁</span>Open Folder
+            </button>
+            <button class="type-btn" data-type="file" onclick="setType('file')">
+              <span class="type-icon">📄</span>Open File
+            </button>
+            <button class="type-btn" data-type="script" onclick="setType('script')">
+              <span class="type-icon">⚙️</span>Run Script
+            </button>
+            <button class="type-btn" data-type="keys" onclick="setType('keys')">
+              <span class="type-icon">⌨️</span>Type & Keys
+            </button>
+            <button class="type-btn" data-type="custom" onclick="setType('custom')">
+              <span class="type-icon">✏️</span>Custom
+            </button>
+          </div>
+
+          <!-- Context fields -->
+          <div id="fields-app">
+            <div class="input-group">
+              <label for="app-name">App Name</label>
+              <div class="autocomplete-wrap">
+                <input type="text" id="app-name" placeholder="e.g. Edge, Fusion 360, Steam" autocomplete="off"
+                  oninput="onAppInput()" onkeydown="onAppKey(event)">
+                <div class="suggestions" id="app-suggestions" style="display:none;"></div>
+              </div>
+            </div>
+            <div id="app-path-wrap" class="input-group" style="display:none;">
+              <label for="app-path">Full Path to .exe <span style="font-weight:400; color:var(--text-muted);">(optional)</span></label>
+              <input type="text" id="app-path" placeholder='e.g. C:\Program Files\MyApp\MyApp.exe' oninput="updatePreview()">
+            </div>
+            <p class="hint" id="app-hint"></p>
+          </div>
+
+          <div id="fields-website" style="display:none;">
+            <div class="input-group">
+              <label for="site-url">URL</label>
+              <input type="text" id="site-url" placeholder="https://example.com" oninput="updatePreview()">
+            </div>
+          </div>
+
+          <div id="fields-folder" style="display:none;">
+            <div class="input-group">
+              <label for="folder-path">Folder Path</label>
+              <input type="text" id="folder-path" placeholder="C:\Users\Admin\Downloads" oninput="updatePreview()">
+            </div>
+            <p class="hint">Tip: copy a folder path from File Explorer's address bar.</p>
+          </div>
+
+          <div id="fields-file" style="display:none;">
+            <div class="input-group">
+              <label for="file-path">File Path</label>
+              <input type="text" id="file-path" placeholder="C:\Users\Admin\Documents\notes.txt" oninput="updatePreview()">
+            </div>
+          </div>
+
+          <div id="fields-script" style="display:none;">
+            <div class="input-group">
+              <label for="script-path">Script Path</label>
+              <input type="text" id="script-path" placeholder="C:\scripts\my_script.py" oninput="updatePreview()">
+            </div>
+            <p class="hint">Supports .py, .bat, and .ps1 — detected automatically.</p>
+          </div>
+
+          <div id="fields-custom" style="display:none;">
+            <div class="input-group">
+              <label for="custom-cmd">Windows Command</label>
+              <input type="text" id="custom-cmd" placeholder='start cmd /k "claude"' oninput="updatePreview()">
+            </div>
+          </div>
+
+          <div id="fields-keys" style="display:none;">
+            <div class="input-group">
+              <label for="keys-text">Text to Type <span style="font-weight:400; color:var(--text-muted);">(optional)</span></label>
+              <input type="text" id="keys-text" placeholder='e.g. claude' oninput="updatePreview()">
+            </div>
+            <div class="input-group">
+              <label>Keys to Press After</label>
+              <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.5rem;">
+                <button class="key-pill" onclick="addKey('Enter')">↵ Enter</button>
+                <button class="key-pill" onclick="addKey('Tab')">⇥ Tab</button>
+                <button class="key-pill" onclick="addKey('Escape')">Esc</button>
+                <button class="key-pill" onclick="addKey('UP')">↑</button>
+                <button class="key-pill" onclick="addKey('DOWN')">↓</button>
+                <button class="key-pill" onclick="addKey('LEFT')">←</button>
+                <button class="key-pill" onclick="addKey('RIGHT')">→</button>
+                <button class="key-pill" onclick="addKey('BACKSPACE')">⌫ Backspace</button>
+                <button class="key-pill" onclick="addKey('DELETE')">Del</button>
+                <button class="key-pill" onclick="addKey('HOME')">Home</button>
+                <button class="key-pill" onclick="addKey('END')">End</button>
+              </div>
+              <div id="key-sequence" style="display:flex; flex-wrap:wrap; gap:0.3rem; min-height:1.5rem;"></div>
+              <button class="btn-ghost" style="width:fit-content; margin-top:0.4rem; font-size:0.75rem;" onclick="clearKeys()">Clear keys</button>
+            </div>
+            <div class="input-group">
+              <label for="keys-delay">Delay before running <span style="font-weight:400; color:var(--text-muted);">(milliseconds)</span></label>
+              <input type="text" id="keys-delay" placeholder="1000" maxlength="6" oninput="updatePreview()">
+            </div>
+            <p class="hint">Use a delay when this step follows opening an app — gives the app time to load before keystrokes are sent. 1000ms = 1 second.</p>
+          </div>
+
+          <!-- Preview + Add Step -->
+          <div class="section-label">Step Preview</div>
+          <div class="cmd-preview" id="cmd-preview">Fill in the fields above</div>
+
+          <div class="add-step-row">
+            <button class="btn btn-sm" onclick="addStep()">+ Add Step</button>
+            <p id="step-error" style="color:#ff6b6b; font-size:0.82rem; margin:auto 0; display:none;"></p>
+          </div>
+
+          <!-- Save macro -->
+          <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 0.25rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="saveMacro()" style="background:var(--blue-mid);">Save Macro</button>
+            <button class="btn-ghost" onclick="clearForm()">Clear</button>
+            <p id="save-error" style="color:#ff6b6b; font-size:0.82rem; margin:0; display:none;"></p>
+          </div>
+        </div>
+
+        <div class="macro-list" id="macro-list"></div>
+      </div>
+
+      <!-- Right: Output -->
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
+
+        <div class="panel">
+          <div class="section-label">Server Code — Paste into server.py</div>
+          <div class="output-box">
+            <button class="copy-btn" onclick="copyText('python-output', this)">Copy</button>
+            <pre id="python-output"># Add macros to get started</pre>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-label">NFC Tag URLs — Program these onto your tags</div>
+          <div id="url-list" class="url-list">
+            <div class="empty-state">Add macros to see NFC tag URLs</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-label">Full Server Script</div>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Downloads a ready-to-run <code style="color:var(--blue-bright);">server.py</code> with all your macros included.</p>
+          <button class="btn btn-outline btn-sm" onclick="downloadServer()">Download server.py</button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Jake Lewien</p>
+  </footer>
+
+  <script>
+    // -------------------------------------------------------
+    // Known apps
+    // -------------------------------------------------------
+    const KNOWN_APPS = {
+      'chrome':               { cmd: 'start chrome',                      label: 'Google Chrome' },
+      'google chrome':        { cmd: 'start chrome',                      label: 'Google Chrome' },
+      'firefox':              { cmd: 'start firefox',                     label: 'Mozilla Firefox' },
+      'mozilla firefox':      { cmd: 'start firefox',                     label: 'Mozilla Firefox' },
+      'edge':                 { cmd: 'start msedge',                      label: 'Microsoft Edge' },
+      'microsoft edge':       { cmd: 'start msedge',                      label: 'Microsoft Edge' },
+      'discord':              { cmd: 'start discord',                     label: 'Discord' },
+      'spotify':              { cmd: 'start spotify',                     label: 'Spotify' },
+      'steam':                { cmd: 'start steam',                       label: 'Steam' },
+      'vs code':              { cmd: 'start code',                        label: 'Visual Studio Code' },
+      'vscode':               { cmd: 'start code',                        label: 'Visual Studio Code' },
+      'visual studio code':   { cmd: 'start code',                        label: 'Visual Studio Code' },
+      'notepad':              { cmd: 'notepad',                           label: 'Notepad' },
+      'notepad++':            { cmd: 'start notepad++',                   label: 'Notepad++' },
+      'calculator':           { cmd: 'calc',                              label: 'Calculator' },
+      'calc':                 { cmd: 'calc',                              label: 'Calculator' },
+      'cmd':                  { cmd: 'start cmd',                         label: 'Command Prompt' },
+      'command prompt':       { cmd: 'start cmd',                         label: 'Command Prompt' },
+      'powershell':           { cmd: 'start powershell',                  label: 'PowerShell' },
+      'file explorer':        { cmd: 'explorer',                          label: 'File Explorer' },
+      'explorer':             { cmd: 'explorer',                          label: 'File Explorer' },
+      'task manager':         { cmd: 'taskmgr',                           label: 'Task Manager' },
+      'claude':               { cmd: 'start cmd /k "claude"',             label: 'Claude (AI)' },
+      'obs':                  { cmd: 'start obs64',                       label: 'OBS Studio' },
+      'obs studio':           { cmd: 'start obs64',                       label: 'OBS Studio' },
+      'vlc':                  { cmd: 'start vlc',                         label: 'VLC Media Player' },
+      'slack':                { cmd: 'start slack',                       label: 'Slack' },
+      'zoom':                 { cmd: 'start zoom',                        label: 'Zoom' },
+      'teams':                { cmd: 'start ms-teams:',                   label: 'Microsoft Teams' },
+      'microsoft teams':      { cmd: 'start ms-teams:',                   label: 'Microsoft Teams' },
+      'word':                 { cmd: 'start winword',                     label: 'Microsoft Word' },
+      'excel':                { cmd: 'start excel',                       label: 'Microsoft Excel' },
+      'powerpoint':           { cmd: 'start powerpnt',                    label: 'PowerPoint' },
+      'paint':                { cmd: 'mspaint',                           label: 'MS Paint' },
+      'snipping tool':        { cmd: 'snippingtool',                      label: 'Snipping Tool' },
+      'settings':             { cmd: 'start ms-settings:',                label: 'Windows Settings' },
+      'control panel':        { cmd: 'control',                           label: 'Control Panel' },
+      'wordpad':              { cmd: 'wordpad',                           label: 'WordPad' },
+      'photos':               { cmd: 'start ms-photos:',                  label: 'Windows Photos' },
+      'xbox':                 { cmd: 'start xbox:',                       label: 'Xbox App' },
+    };
+
+    // -------------------------------------------------------
+    // State
+    // -------------------------------------------------------
+    let macros      = [];
+    let buildSteps  = [];   // steps being built for current macro
+    let currentType = 'app';
+    let suggestIdx  = -1;
+    let keySequence = [];   // keys queued for the Type & Keys step
+
+
+    // -------------------------------------------------------
+    // Init
+    // -------------------------------------------------------
+    document.getElementById('pc-ip').value   = localStorage.getItem('nfc-pc-ip')   || '';
+    document.getElementById('pc-port').value = localStorage.getItem('nfc-pc-port') || '8080';
+
+    document.getElementById('pc-ip').addEventListener('input', () => {
+      localStorage.setItem('nfc-pc-ip', document.getElementById('pc-ip').value.trim());
+      renderUrlList();
+    });
+    document.getElementById('pc-port').addEventListener('input', () => {
+      localStorage.setItem('nfc-pc-port', document.getElementById('pc-port').value.trim());
+      renderUrlList();
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.autocomplete-wrap')) hideSuggestions();
+    });
+
+    render();
+    updatePreview();
+
+    // -------------------------------------------------------
+    // Type selector
+    // -------------------------------------------------------
+    function setType(type) {
+      currentType = type;
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+      ['app','website','folder','file','script','keys','custom'].forEach(t => {
+        document.getElementById('fields-' + t).style.display = t === type ? '' : 'none';
+      });
+      updatePreview();
+      autoFocusField(type);
+    }
+
+    function autoFocusField(type) {
+      const map = { app:'app-name', website:'site-url', folder:'folder-path', file:'file-path', script:'script-path', keys:'keys-text', custom:'custom-cmd' };
+      const el = document.getElementById(map[type]);
+      if (el) el.focus();
+    }
+
+    // -------------------------------------------------------
+    // Key sequence helpers
+    // -------------------------------------------------------
+    function addKey(key) {
+      keySequence.push(key);
+      renderKeySequence();
+      updatePreview();
+    }
+
+    function removeKey(idx) {
+      keySequence.splice(idx, 1);
+      renderKeySequence();
+      updatePreview();
+    }
+
+    function clearKeys() {
+      keySequence = [];
+      renderKeySequence();
+      updatePreview();
+    }
+
+    const KEY_LABELS = { Enter:'↵ Enter', Tab:'⇥ Tab', Escape:'Esc', UP:'↑', DOWN:'↓', LEFT:'←', RIGHT:'→', BACKSPACE:'⌫', DELETE:'Del', HOME:'Home', END:'End' };
+
+    function renderKeySequence() {
+      const el = document.getElementById('key-sequence');
+      if (!keySequence.length) { el.innerHTML = '<span style="color:var(--text-muted); font-size:0.78rem;">No keys added yet</span>'; return; }
+      el.innerHTML = keySequence.map((k, i) => `
+        <span class="key-tag">
+          ${esc(KEY_LABELS[k] || k)}
+          <span class="key-tag-remove" onclick="removeKey(${i})">✕</span>
+        </span>
+      `).join('');
+    }
+
+    // -------------------------------------------------------
+    // App autocomplete
+    // -------------------------------------------------------
+    function onAppInput() {
+      updatePreview();
+      const val  = document.getElementById('app-name').value.trim().toLowerCase();
+      const sugEl = document.getElementById('app-suggestions');
+      if (!val) { hideSuggestions(); return; }
+
+      const seen = new Set();
+      const matches = Object.entries(KNOWN_APPS)
+        .filter(([k]) => k.startsWith(val) || k.includes(val))
+        .filter(([, v]) => { if (seen.has(v.label)) return false; seen.add(v.label); return true; })
+        .slice(0, 6);
+
+      if (!matches.length) { hideSuggestions(); return; }
+
+      suggestIdx = -1;
+      sugEl.innerHTML = matches.map(([, v]) => `
+        <div class="suggestion-item" onmousedown="selectApp('${esc(v.label)}','${esc(v.cmd)}')">
+          <span>${esc(v.label)}</span>
+          <span class="suggestion-known">Known app</span>
+        </div>
+      `).join('');
+      sugEl.style.display = 'block';
+    }
+
+    function onAppKey(e) {
+      const sugEl = document.getElementById('app-suggestions');
+      const items = sugEl.querySelectorAll('.suggestion-item');
+      if (sugEl.style.display === 'none') {
+        if (e.key === 'Enter') addStep();
+        return;
+      }
+      if (e.key === 'ArrowDown') { e.preventDefault(); suggestIdx = Math.min(suggestIdx + 1, items.length - 1); highlightSuggestion(items); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); suggestIdx = Math.max(suggestIdx - 1, -1); highlightSuggestion(items); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (suggestIdx >= 0) items[suggestIdx].dispatchEvent(new MouseEvent('mousedown')); else { hideSuggestions(); addStep(); } }
+      else if (e.key === 'Escape') hideSuggestions();
+    }
+
+    function highlightSuggestion(items) {
+      items.forEach((el, i) => el.style.background = i === suggestIdx ? 'var(--blue-dim)' : '');
+    }
+
+    function selectApp(label, cmd) {
+      document.getElementById('app-name').value = label;
+      hideSuggestions();
+      updatePreview();
+    }
+
+    function hideSuggestions() {
+      document.getElementById('app-suggestions').style.display = 'none';
+      suggestIdx = -1;
+    }
+
+    // -------------------------------------------------------
+    // Command generation
+    // -------------------------------------------------------
+    function buildCommand() {
+      const hintEl = document.getElementById('app-hint');
+      if (hintEl) hintEl.textContent = '';
+
+      if (currentType === 'app') {
+        const name     = document.getElementById('app-name').value.trim();
+        const fullPath = document.getElementById('app-path').value.trim();
+        const pathWrap = document.getElementById('app-path-wrap');
+        if (!name) return null;
+        if (fullPath) { pathWrap.style.display = ''; return { cmd: `start "" "${fullPath}"`, label: name }; }
+        const match = KNOWN_APPS[name.toLowerCase()];
+        if (match) { pathWrap.style.display = 'none'; return { cmd: match.cmd, label: match.label }; }
+        pathWrap.style.display = '';
+        if (hintEl) hintEl.innerHTML = `"${esc(name)}" isn't in the known apps list. If it doesn't work, enter the full .exe path above.`;
+        return { cmd: `start "" "${name}.exe"`, label: name };
+      }
+
+      if (currentType === 'website') {
+        let url = document.getElementById('site-url').value.trim();
+        if (!url) return null;
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        return { cmd: `start ${url}`, label: url };
+      }
+
+      if (currentType === 'folder') {
+        const p = document.getElementById('folder-path').value.trim();
+        return p ? { cmd: `explorer "${p}"`, label: p } : null;
+      }
+
+      if (currentType === 'file') {
+        const p = document.getElementById('file-path').value.trim();
+        return p ? { cmd: `start "" "${p}"`, label: p } : null;
+      }
+
+      if (currentType === 'script') {
+        const p = document.getElementById('script-path').value.trim();
+        if (!p) return null;
+        const ext = p.split('.').pop().toLowerCase();
+        let cmd;
+        if (ext === 'py')  cmd = `start cmd /k "python \\"${p}\\""`;
+        else if (ext === 'ps1') cmd = `start powershell -ExecutionPolicy Bypass -File "${p}"`;
+        else cmd = `start "" "${p}"`;
+        return { cmd, label: p.replace(/\\/g, '/').split('/').pop() };
+      }
+
+      if (currentType === 'keys') {
+        const text  = document.getElementById('keys-text').value;
+        const delay = parseInt(document.getElementById('keys-delay').value.trim()) || 1000;
+        if (!text && !keySequence.length) return null;
+
+        // Build SendKeys string: text first, then key specifiers like {ENTER}
+        let sendStr = text.replace(/[+^%~(){}[\]]/g, '{$&}'); // escape SendKeys special chars
+        keySequence.forEach(k => { sendStr += `{${k}}`; });
+
+        const cmd = `powershell -WindowStyle Hidden -Command "Start-Sleep -Milliseconds ${delay}; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${sendStr.replace(/'/g, "''")}')"`;
+        const parts = [];
+        if (text) parts.push(`type "${text}"`);
+        if (keySequence.length) parts.push(keySequence.map(k => KEY_LABELS[k] || k).join(' → '));
+        return { cmd, label: parts.join(' + ') };
+      }
+
+      if (currentType === 'custom') {
+        const v = document.getElementById('custom-cmd').value.trim();
+        return v ? { cmd: v, label: v } : null;
+      }
+
+      return null;
+    }
+
+    function updatePreview() {
+      const result  = buildCommand();
+      const preview = document.getElementById('cmd-preview');
+      if (result) {
+        preview.textContent = result.cmd;
+        preview.classList.add('has-value');
+      } else {
+        preview.textContent = 'Fill in the fields above';
+        preview.classList.remove('has-value');
+      }
+    }
+
+    // -------------------------------------------------------
+    // Add Step
+    // -------------------------------------------------------
+    function addStep() {
+      const errEl  = document.getElementById('step-error');
+      const result = buildCommand();
+
+      if (!result) { showErr(errEl, 'Fill in the step details first.'); return; }
+      errEl.style.display = 'none';
+
+      buildSteps.push({ cmd: result.cmd, label: result.label, type: currentType });
+      clearStepFields();
+      renderBuildingSteps();
+      updatePreview();
+      autoFocusField(currentType);
+    }
+
+    function removeStep(idx) {
+      buildSteps.splice(idx, 1);
+      renderBuildingSteps();
+    }
+
+    function renderBuildingSteps() {
+      const el      = document.getElementById('steps-building');
+      const divider = document.getElementById('step-divider');
+
+      if (buildSteps.length === 0) {
+        el.style.display = 'none';
+        divider.textContent = 'Add a Step';
+        return;
+      }
+
+      el.style.display = 'flex';
+      divider.textContent = 'Add Another Step';
+      el.innerHTML = buildSteps.map((s, i) => `
+        <div class="step-item">
+          <span class="step-num">${i + 1}</span>
+          <span class="step-label">${esc(s.label)}</span>
+          <span class="step-cmd">${esc(s.cmd)}</span>
+          <button class="btn-ghost" style="padding:0.15rem 0.45rem; font-size:0.75rem;" onclick="removeStep(${i})">✕</button>
+        </div>
+      `).join('');
+    }
+
+    // -------------------------------------------------------
+    // Save Macro
+    // -------------------------------------------------------
+    function saveMacro() {
+      const errEl  = document.getElementById('save-error');
+      const nameEl = document.getElementById('macro-name');
+      const name   = nameEl.value.trim().replace(/\s+/g, '_').toLowerCase();
+
+      if (!name)              { showErr(errEl, 'Give your macro a name.'); return; }
+      if (!buildSteps.length) { showErr(errEl, 'Add at least one step first.'); return; }
+      if (macros.find(m => m.name === name)) { showErr(errEl, `"${name}" already exists.`); return; }
+
+      errEl.style.display = 'none';
+      macros.push({ name, steps: [...buildSteps] });
+      save();
+      clearForm();
+      render();
+    }
+
+    // -------------------------------------------------------
+    // Delete Macro
+    // -------------------------------------------------------
+    function deleteMacro(name) {
+      macros = macros.filter(m => m.name !== name);
+      save();
+      render();
+    }
+
+    // -------------------------------------------------------
+    // Clear helpers
+    // -------------------------------------------------------
+    function clearStepFields() {
+      ['app-name','app-path','site-url','folder-path','file-path','script-path','keys-text','keys-delay','custom-cmd'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('app-path-wrap').style.display = 'none';
+      document.getElementById('app-hint').textContent = '';
+      keySequence = [];
+      renderKeySequence();
+      hideSuggestions();
+    }
+
+    function clearForm() {
+      buildSteps = [];
+      document.getElementById('macro-name').value = '';
+      clearStepFields();
+      renderBuildingSteps();
+      updatePreview();
+      document.getElementById('step-error').style.display  = 'none';
+      document.getElementById('save-error').style.display  = 'none';
+      autoFocusField(currentType);
+    }
+
+    function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+    // -------------------------------------------------------
+    // Save
+    // -------------------------------------------------------
+    function save() { /* macros are session-only, not persisted */ }
+
+    // -------------------------------------------------------
+    // Render
+    // -------------------------------------------------------
+    function render() {
+      renderMacroList();
+      renderPythonOutput();
+      renderUrlList();
+    }
+
+    function renderMacroList() {
+      const el = document.getElementById('macro-list');
+      if (!macros.length) { el.innerHTML = '<div class="empty-state">No macros yet — create one above</div>'; return; }
+      el.innerHTML = macros.map(m => `
+        <div class="macro-item">
+          <div class="macro-item-header">
+            <span class="macro-item-name">${esc(m.name)}</span>
+            <button class="btn-danger" onclick="deleteMacro('${esc(m.name)}')">Remove</button>
+          </div>
+          <div class="macro-item-steps">
+            ${m.steps.map((s, i) => `
+              <div class="macro-step-row">
+                <span class="macro-step-num">${i + 1}</span>
+                <span>${esc(s.label)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderPythonOutput() {
+      const el = document.getElementById('python-output');
+      if (!macros.length) { el.textContent = '# Add macros to get started'; return; }
+
+      const maxLen = Math.max(...macros.map(m => m.name.length));
+      const lines = macros.map(m => {
+        const pad  = ' '.repeat(maxLen - m.name.length);
+        if (m.steps.length === 1) {
+          return `    "${m.name}"${pad}: ${JSON.stringify(m.steps[0].cmd)},`;
+        }
+        const cmds = m.steps.map(s => `        ${JSON.stringify(s.cmd)},`).join('\n');
+        return `    "${m.name}"${pad}: [\n${cmds}\n    ],`;
+      });
+      el.textContent = `ACTIONS = {\n${lines.join('\n')}\n}`;
+    }
+
+    function renderUrlList() {
+      const el   = document.getElementById('url-list');
+      const ip   = document.getElementById('pc-ip').value.trim();
+      const port = document.getElementById('pc-port').value.trim() || '8080';
+      if (!macros.length) { el.innerHTML = '<div class="empty-state">Add macros to see NFC tag URLs</div>'; return; }
+      const base = ip ? `http://${ip}:${port}/run` : `http://<YOUR-PC-IP>:${port}/run`;
+      el.innerHTML = macros.map(m => {
+        const url = `${base}?action=${encodeURIComponent(m.name)}`;
+        return `
+          <div class="url-entry">
+            <span class="url-entry-name">${esc(m.name)}</span>
+            <span class="url-entry-url" title="${esc(url)}">${esc(url)}</span>
+            <button class="url-copy-btn" onclick="copyUrl('${esc(url)}', this)">Copy</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -------------------------------------------------------
+    // Copy / Download
+    // -------------------------------------------------------
+    function copyText(id, btn) {
+      navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => flashCopied(btn));
+    }
+    function copyUrl(url, btn) {
+      navigator.clipboard.writeText(url).then(() => flashCopied(btn));
+    }
+    function flashCopied(btn) {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+    }
+
+    function downloadServer() {
+      const port = document.getElementById('pc-port').value.trim() || '8080';
+      const maxLen = macros.length > 0 ? Math.max(...macros.map(m => m.name.length)) : 0;
+
+      const actionLines = macros.length > 0
+        ? macros.map(m => {
+            const pad = ' '.repeat(maxLen - m.name.length);
+            if (m.steps.length === 1) {
+              return `    "${m.name}"${pad}: ${JSON.stringify(m.steps[0].cmd)},`;
+            }
+            const cmds = m.steps.map(s => `        ${JSON.stringify(s.cmd)},`).join('\n');
+            return `    "${m.name}"${pad}: [\n${cmds}\n    ],`;
+          }).join('\n')
+        : '    # No macros added yet';
+
+      const script = `from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+import subprocess
+import threading
+import time
+
+# -------------------------------------------------------
+# NFC Macro Server — generated by Jake Lewien NFC Macro Builder
+# -------------------------------------------------------
+
+ACTIONS = {
+${actionLines}
+}
+
+def run_steps(cmds):
+    for cmd in cmds:
+        subprocess.Popen(cmd, shell=True)
+        time.sleep(0.3)  # small gap so each step launches before the next
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path.startswith('/run'):
+            query = parse_qs(urlparse(self.path).query)
+            action = query.get('action', [None])[0]
+            if action in ACTIONS:
+                cmds = ACTIONS[action]
+                if isinstance(cmds, str):
+                    cmds = [cmds]
+                threading.Thread(target=run_steps, args=(cmds,), daemon=True).start()
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'OK')
+            else:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b'Unknown action')
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        print(f"[NFC] {self.address_string()} -> {args[0]}")
+
+print(f"NFC Macro Server running on port ${port}")
+print(f"Actions: {', '.join(ACTIONS.keys()) if ACTIONS else 'none'}")
+HTTPServer(('0.0.0.0', ${port}), Handler).serve_forever()
+`;
+
+      const blob = new Blob([script], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'server.py';
+      a.click();
+    }
+
+    // -------------------------------------------------------
+    // Escape HTML
+    // -------------------------------------------------------
+    function esc(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+  <script src="motion.js"></script>
+</body>
+</html>

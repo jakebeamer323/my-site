@@ -1,0 +1,2 @@
+User-agent: *
+Disallow: /jl-resume-2026.html

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFC Macros — Jake Lewien</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+
+    /* ── How it works ──────────────────────────────────────── */
+    .how-it-works {
+      margin-top: 2.5rem;
+    }
+
+    .how-steps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .how-step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      position: relative;
+    }
+
+    .how-step-num {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+      background: var(--blue-dim);
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+      align-self: flex-start;
+    }
+
+    .how-step h3 {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .how-step p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Platform guides ───────────────────────────────────── */
+    .platform-guides {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.25rem;
+    }
+
+    .platform-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .platform-card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .platform-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .platform-icon.ios   { background: rgba(10, 132, 255, 0.12); border: 1px solid rgba(10, 132, 255, 0.25); }
+    .platform-icon.win   { background: rgba(0, 120, 212, 0.12);  border: 1px solid rgba(0, 120, 212, 0.25); }
+
+    .platform-card-header h3 {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .platform-card-header p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+
+    .platform-steps {
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .pstep {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+    }
+
+    .pstep-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--blue-dim);
+      border: 1px solid var(--blue-mid);
+      color: var(--blue-bright);
+      font-size: 0.68rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.05rem;
+    }
+
+    .pstep-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .pstep-text strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .pstep-text code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: var(--blue-bright);
+      background: var(--blue-dim);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .platform-note {
+      margin: 0 1.25rem 1rem;
+      padding: 0.65rem 0.9rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .platform-note strong {
+      color: var(--text);
+    }
+
+    /* ── Requirements callout ──────────────────────────────── */
+    .requirements {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--blue-mid);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-top: 1.25rem;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .req-group h4 {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .req-group ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .req-group li {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding-left: 1rem;
+      position: relative;
+    }
+
+    .req-group li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--blue-mid);
+    }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .how-steps { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .how-steps       { grid-template-columns: 1fr 1fr; }
+      .platform-guides { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .how-steps { grid-template-columns: 1fr; }
+    }
+
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="nav-name">Jake Lewien</span>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="projects.html" class="active">Projects</a>
+      <a href="downloads.html">Downloads</a>
+      <a href="nfc-macros.html">NFC Macros</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <a href="projects.html" class="back-link">&larr; All Projects</a>
+
+    <div class="project-header">
+      <div class="card-tag">Hardware / Software</div>
+      <h1>NFC Macros</h1>
+      <span class="status in-progress">In Progress</span>
+    </div>
+
+    <div class="project-body">
+      <p>NFC Macros is a browser-based tool for building and writing custom PC automation macros triggered by physical NFC tags. Design sequences that open apps, launch websites, run scripts, type keystrokes, or chain multiple actions together — then write a URL payload to a blank NFC tag. Tap the tag with your phone and the action runs on your PC instantly.</p>
+      <p>The whole system runs locally: a lightweight server on your PC listens for requests over your home network, and the NFC tag simply acts as a physical shortcut that makes an HTTP call when tapped. No cloud, no third-party app required on the triggering device — just a cheap NFC tag and any NFC-capable phone.</p>
+    </div>
+
+    <div class="tech-tags">
+      <span class="tech-tag">Web NFC API</span>
+      <span class="tech-tag">JavaScript</span>
+      <span class="tech-tag">Local HTTP Server</span>
+      <span class="tech-tag">NDEF / NTAG213</span>
+      <span class="tech-tag">Browser-Native</span>
+    </div>
+
+    <!-- How it works -->
+    <div class="how-it-works">
+      <h2 class="section-heading">How It Works</h2>
+      <div class="how-steps">
+        <div class="how-step">
+          <span class="how-step-num">Step 1</span>
+          <h3>Build Your Macros</h3>
+          <p>Use the builder to design all the macros you want — open apps, run scripts, launch sites, type text, or chain steps together.</p>
+        </div>
+        <div class="how-step">
+          <span class="how-step-num">Step 2</span>
+          <h3>Download the Server</h3>
+          <p>Export your macros as a <code>.py</code> file. This script contains your macros and acts as the local server your tags will talk to.</p>
+        </div>
+        <div class="how-step">
+          <span class="how-step-num">Step 3</span>
+          <h3>Run It on Your PC</h3>
+          <p>Run the <code>.py</code> file on your Windows PC. It starts a lightweight local server that listens for tag tap requests over your network.</p>
+        </div>
+        <div class="how-step">
+          <span class="how-step-num">Step 4</span>
+          <h3>Write the NFC Tag</h3>
+          <p>Use your phone to write each macro's trigger URL to a blank NFC tag. iPhone users use NFC Tools; Android users can write directly from Chrome.</p>
+        </div>
+        <div class="how-step">
+          <span class="how-step-num">Step 5</span>
+          <h3>Tap to Run</h3>
+          <p>Tap any programmed tag with your phone. The request hits your PC and the macro executes instantly — no unlocking, no app, one tap.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requirements -->
+    <h2 class="section-heading" style="margin-top: 2.5rem;">What You Need</h2>
+    <div class="requirements">
+      <div class="req-group">
+        <h4>Hardware</h4>
+        <ul>
+          <li>Blank NFC tags (NTAG213, 215, or 216)</li>
+          <li>iPhone (iOS 13+) or Android phone</li>
+          <li>Windows PC on the same Wi-Fi network</li>
+        </ul>
+      </div>
+      <div class="req-group">
+        <h4>Software</h4>
+        <ul>
+          <li>Local server running on your PC</li>
+          <li>Chrome (Android) or NFC Tools app (iPhone) to write tags</li>
+          <li>No app needed on your phone to trigger macros</li>
+        </ul>
+      </div>
+      <div class="req-group">
+        <h4>Network</h4>
+        <ul>
+          <li>PC and phone on the same Wi-Fi network</li>
+          <li>Static or reserved IP recommended for the PC</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Platform guides -->
+    <h2 class="section-heading" style="margin-top: 2.5rem;">Setup Guides</h2>
+    <div class="platform-guides">
+
+      <!-- Windows PC -->
+      <div class="platform-card">
+        <div class="platform-card-header">
+          <div class="platform-icon win">🖥️</div>
+          <div>
+            <h3>Windows PC</h3>
+            <p>Server setup &amp; macro configuration</p>
+          </div>
+        </div>
+        <div class="platform-steps">
+          <div class="pstep">
+            <div class="pstep-num">1</div>
+            <div class="pstep-text">Find your PC's local IP: open <strong>Command Prompt</strong> and run <code>ipconfig</code>. Look for the <em>IPv4 Address</em> under your Wi-Fi adapter (e.g. <code>192.168.1.50</code>). Enter it in the <strong>PC Settings</strong> panel in the builder.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">2</div>
+            <div class="pstep-text">Build all the macros you want in the <strong>NFC Macro Builder</strong> — open apps, run scripts, navigate to sites, type keystrokes, or chain multiple steps per macro.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">3</div>
+            <div class="pstep-text">Click <strong>Download .py</strong> to export your macros as a Python server script.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">4</div>
+            <div class="pstep-text">Run the downloaded <code>.py</code> file on your PC: double-click it, or open Command Prompt in that folder and run <code>python server.py</code>. Keep it running whenever you want your tags to work.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">5</div>
+            <div class="pstep-text">Write each macro's NFC tag using your phone (see iPhone guide), then tap to trigger. The macro runs on your PC immediately.</div>
+          </div>
+        </div>
+        <div class="platform-note">
+          <strong>Requires Python 3:</strong> Download free from <strong>python.org</strong> if not already installed. To keep your PC's IP stable, set a DHCP reservation in your router — search your router model + "DHCP reservation."
+        </div>
+      </div>
+
+      <!-- iPhone -->
+      <div class="platform-card">
+        <div class="platform-card-header">
+          <div class="platform-icon ios">📱</div>
+          <div>
+            <h3>iPhone</h3>
+            <p>Writing tags &amp; triggering macros</p>
+          </div>
+        </div>
+        <div class="platform-steps">
+          <div class="pstep">
+            <div class="pstep-num">1</div>
+            <div class="pstep-text">Make sure your PC's <code>.py</code> server is already running and your iPhone is on the <strong>same Wi-Fi network</strong> as the PC.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">2</div>
+            <div class="pstep-text">Download <strong>NFC Tools</strong> (free) from the App Store. This is only needed once per tag to write the URL — you won't need it again after that.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">3</div>
+            <div class="pstep-text">In the <strong>NFC Macro Builder</strong>, copy the trigger URL for the macro you want to write to a tag.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">4</div>
+            <div class="pstep-text">Open <strong>NFC Tools</strong> → tap <em>Write</em> → <em>Add a record</em> → <em>URL/URI</em> → paste the trigger URL → tap <em>Write</em> → hold your iPhone against the blank NFC tag until it confirms.</div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-num">5</div>
+            <div class="pstep-text"><strong>That's it.</strong> From now on, just tap the tag with your iPhone — no app, no unlock required. iOS fires the request and your macro runs on the PC instantly.</div>
+          </div>
+        </div>
+        <div class="platform-note">
+          <strong>Note:</strong> Safari does not support writing NFC tags — NFC Tools handles that one-time step. Once a tag is written, no app is needed to trigger it.
+        </div>
+        <div class="platform-note">
+          <strong>iPhone NFC &amp; Security:</strong> Due to a built-in iOS security feature, tapping an NFC tag shows a notification banner at the top of the screen first. You have to tap that notification to confirm before the macro fires — so it's technically a 2-tap process on iPhone rather than a true single tap.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Roadmap -->
+    <h2 class="section-title">Roadmap</h2>
+    <ul class="roadmap">
+      <li class="done">Macro Builder UI</li>
+      <li class="done">NFC Tag Write Support</li>
+      <li class="active">Macro Library &amp; Saved Presets</li>
+      <li>PC Companion Server</li>
+      <li>iPhone Setup Wizard</li>
+      <li>Tag Read &amp; Import</li>
+    </ul>
+
+    <a href="nfc-macros.html" class="btn">Try the Builder &rarr;</a>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Jake Lewien</p>
+  </footer>
+  <script src="motion.js"></script>
+</body>
+</html>

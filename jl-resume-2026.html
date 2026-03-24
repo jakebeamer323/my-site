@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Resume — Jake Lewien</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+
+    /* ── Resume layout ─────────────────────────────────────── */
+    .resume {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3.5rem 3rem 5rem;
+      width: 100%;
+    }
+
+    /* ── Resume header ─────────────────────────────────────── */
+    .resume-header {
+      padding-bottom: 2.5rem;
+      margin-bottom: 2.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .resume-header .eyebrow {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--blue-mid);
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+
+    .resume-name {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--blue-light), var(--blue-bright) 55%, var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+      line-height: 1.1;
+    }
+
+    .resume-title {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+    }
+
+    .resume-title span {
+      color: var(--text-dim);
+      margin: 0 0.4rem;
+    }
+
+    /* ── Section ───────────────────────────────────────────── */
+    .resume-section {
+      margin-bottom: 3rem;
+    }
+
+    .resume-section-title {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue-mid);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .resume-section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Summary ───────────────────────────────────────────── */
+    .summary p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+      max-width: 780px;
+    }
+
+    .summary p + p {
+      margin-top: 0.9rem;
+    }
+
+    .summary strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── Competency grid ───────────────────────────────────── */
+    .competency-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    /* Competency cards use .feature-card base — only set top-border colors here */
+    .feature-card.fabrication { border-top-color: var(--accent-green); }
+    .feature-card.tools       { border-top-color: #f59e0b; }
+
+    .competency-group-title {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.85rem;
+    }
+
+    .feature-card.software .competency-group-title  { color: var(--blue-bright); }
+    .feature-card.hardware .competency-group-title  { color: var(--accent-purple); }
+    .feature-card.fabrication .competency-group-title { color: var(--accent-green); }
+    .feature-card.tools .competency-group-title     { color: #f59e0b; }
+
+    .competency-group ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .competency-group li {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      padding-left: 0.85rem;
+      position: relative;
+    }
+
+    .competency-group li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--text-dim);
+    }
+
+    /* ── Project entries ───────────────────────────────────── */
+    .project-entries {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .project-entry-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .project-entry-name {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .project-entry-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--blue-mid);
+      white-space: nowrap;
+      padding-top: 0.1rem;
+    }
+
+    .project-entry-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 0.9rem;
+    }
+
+    .project-skills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .project-skill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      background: rgba(42, 106, 173, 0.12);
+      color: var(--blue-light);
+      border: 1px solid var(--blue-dim);
+    }
+
+    /* ── Approach section ──────────────────────────────────── */
+    .approach-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .approach-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--blue-bright), var(--accent-purple));
+    }
+
+    .approach-box p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+      max-width: 760px;
+    }
+
+    .approach-box p + p {
+      margin-top: 0.85rem;
+    }
+
+    .approach-box strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── Resume footer ─────────────────────────────────────── */
+    .resume-footer-note {
+      text-align: center;
+      padding: 2rem 0 0;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .resume {
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .competency-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .competency-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <nav>
+    <span class="nav-name">Jake Lewien</span>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="downloads.html">Downloads</a>
+      <a href="nfc-macros.html">NFC Macros</a>
+    </div>
+  </nav>
+
+  <main class="resume">
+
+    <!-- Header -->
+    <header class="resume-header">
+      <span class="eyebrow">Engineering Resume</span>
+      <h1 class="resume-name">Jake Lewien</h1>
+      <p class="resume-title">
+        Hardware Design <span>·</span> Embedded Systems <span>·</span> Software Development <span>·</span> Digital Fabrication
+      </p>
+    </header>
+
+    <!-- Professional Summary -->
+    <section class="resume-section summary">
+      <h2 class="resume-section-title">Professional Summary</h2>
+      <p>
+        A self-directed, multidisciplinary engineer with hands-on experience spanning PCB design, embedded systems,
+        full-stack software development, AI integration, and digital fabrication. Every skill in my toolkit was built
+        in service of a real project — not coursework — giving me a <strong>practical, first-principles understanding</strong>
+        of how hardware and software systems work at every layer.
+      </p>
+      <p>
+        I thrive at the intersection of disciplines: designing the PCB, writing the firmware, building the companion app,
+        and fabricating the enclosure — as a single continuous workflow. My portfolio demonstrates a consistent ability to
+        <strong>independently acquire technical skills, execute complex projects, and deliver working results</strong>
+        across mechanical, electrical, and software domains.
+      </p>
+    </section>
+
+    <!-- Core Competencies -->
+    <section class="resume-section">
+      <h2 class="resume-section-title">Core Competencies</h2>
+      <div class="competency-grid">
+
+        <div class="feature-card competency-group software">
+          <div class="competency-group-title">Software Development</div>
+          <ul>
+            <li>JavaScript &amp; HTML5 Canvas</li>
+            <li>Python &amp; FastAPI</li>
+            <li>GDScript (Godot Engine)</li>
+            <li>Browser APIs (Web NFC, Canvas)</li>
+            <li>REST API design</li>
+            <li>State management &amp; architecture</li>
+          </ul>
+        </div>
+
+        <div class="feature-card competency-group hardware">
+          <div class="competency-group-title">Hardware &amp; Embedded</div>
+          <ul>
+            <li>PCB design — KiCad</li>
+            <li>Microcontrollers (RP2350, RPi)</li>
+            <li>QMK firmware development</li>
+            <li>Servo &amp; motor control</li>
+            <li>NFC / RFID systems</li>
+            <li>Audio hardware (I2S, amplifiers)</li>
+          </ul>
+        </div>
+
+        <div class="feature-card competency-group fabrication">
+          <div class="competency-group-title">Fabrication</div>
+          <ul>
+            <li>FDM 3D printing</li>
+            <li>CAD modeling for production</li>
+            <li>Enclosure &amp; case design</li>
+            <li>Tolerance-aware part design</li>
+            <li>Anodized aluminum finishing</li>
+            <li>PCB prototyping &amp; assembly</li>
+          </ul>
+        </div>
+
+        <div class="feature-card competency-group tools">
+          <div class="competency-group-title">AI &amp; Systems</div>
+          <ul>
+            <li>Local LLM deployment (Ollama)</li>
+            <li>Speech-to-text (Whisper)</li>
+            <li>AI pipeline architecture</li>
+            <li>Systems design &amp; planning</li>
+            <li>Technical documentation</li>
+            <li>Rapid skill acquisition</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Project Portfolio -->
+    <section class="resume-section">
+      <h2 class="resume-section-title">Project Portfolio</h2>
+      <div class="project-entries">
+
+        <div class="card project-entry">
+          <div class="project-entry-header">
+            <span class="project-entry-name">Fracture — Custom Keyboard Family</span>
+            <span class="project-entry-tag">Hardware / Firmware / Software</span>
+          </div>
+          <p class="project-entry-desc">
+            Designing a family of three custom mechanical keyboards (full layout, numpad, macropad) from the PCB up using KiCad —
+            with no prior PCB design experience. Each device features per-key addressable RGB, Kailh hot-swap sockets,
+            USB-C connectivity, and QMK firmware on an RP2350 microcontroller. A companion desktop app handles
+            per-device RGB profiles, macro layers, and live configuration across all connected devices simultaneously.
+          </p>
+          <div class="project-skills">
+            <span class="project-skill">KiCad</span>
+            <span class="project-skill">RP2350</span>
+            <span class="project-skill">QMK Firmware</span>
+            <span class="project-skill">WS2812B RGB</span>
+            <span class="project-skill">PCB Design</span>
+            <span class="project-skill">Embedded C</span>
+            <span class="project-skill">USB-C</span>
+          </div>
+        </div>
+
+        <div class="card project-entry">
+          <div class="project-entry-header">
+            <span class="project-entry-name">Ratch — AI-Powered Workshop Droid</span>
+            <span class="project-entry-tag">Robotics / AI / Fabrication</span>
+          </div>
+          <p class="project-entry-desc">
+            End-to-end design and build of a voice-activated workshop droid running entirely on local hardware — no cloud dependency.
+            Engineered a complete AI pipeline: speech-to-text via Whisper, natural language generation via LLaMA 3.2 (Ollama),
+            and character-tuned voice synthesis via edge-tts, all served through a FastAPI backend.
+            The 3D printed Pit Droid-inspired body integrates seven servos for physical expression, controlled by a
+            Raspberry Pi via PCA9685. Includes a persistent memory system and a tuned audio chain for character-accurate voice output.
+          </p>
+          <div class="project-skills">
+            <span class="project-skill">Python</span>
+            <span class="project-skill">FastAPI</span>
+            <span class="project-skill">Raspberry Pi</span>
+            <span class="project-skill">Whisper STT</span>
+            <span class="project-skill">Ollama / LLaMA</span>
+            <span class="project-skill">Servo Control</span>
+            <span class="project-skill">3D Printing</span>
+            <span class="project-skill">CAD</span>
+            <span class="project-skill">Audio DSP</span>
+          </div>
+        </div>
+
+        <div class="card project-entry">
+          <div class="project-entry-header">
+            <span class="project-entry-name">Xenoforge — Browser-Based Factory Game</span>
+            <span class="project-entry-tag">Software / Game Dev / Systems Design</span>
+          </div>
+          <p class="project-entry-desc">
+            Designed and built a fully functional factory and logistics game running in a single HTML file — no engine,
+            no dependencies, no install. Built a custom 2D tile renderer on HTML5 Canvas with a 60fps game loop,
+            500ms logic tick, and persistent state via localStorage. The game features 304 unique components across
+            seven production tiers, a conveyor routing system, machine processing logic, a blueprint system for
+            compressing sub-factories into reusable tiles, and a complete economy layer. Demonstrates deep
+            understanding of complex system architecture, simulation design, and data-driven game mechanics.
+          </p>
+          <div class="project-skills">
+            <span class="project-skill">JavaScript</span>
+            <span class="project-skill">HTML5 Canvas</span>
+            <span class="project-skill">Systems Architecture</span>
+            <span class="project-skill">Simulation Design</span>
+            <span class="project-skill">State Management</span>
+            <span class="project-skill">Data Structures</span>
+          </div>
+        </div>
+
+        <div class="card project-entry">
+          <div class="project-entry-header">
+            <span class="project-entry-name">RiftCast — 2D Sci-Fi Survival Game</span>
+            <span class="project-entry-tag">Software / Game Dev</span>
+          </div>
+          <p class="project-entry-desc">
+            A Terraria-inspired 2D survival and exploration game built in Godot 4.6. Features procedurally generated
+            worlds with five depth layers, four biome zones, cave systems, four ore types with glow effects, and a
+            vector-drawn player character rendered entirely in GDScript. Currently implementing inventory, crafting,
+            and enemy systems on top of a working movement, mining, and HUD foundation.
+          </p>
+          <div class="project-skills">
+            <span class="project-skill">Godot 4.6</span>
+            <span class="project-skill">GDScript</span>
+            <span class="project-skill">Procedural Generation</span>
+            <span class="project-skill">2D Physics</span>
+            <span class="project-skill">Vector Rendering</span>
+          </div>
+        </div>
+
+        <div class="card project-entry">
+          <div class="project-entry-header">
+            <span class="project-entry-name">NFC Macros — Browser-Based NFC Tool</span>
+            <span class="project-entry-tag">Software / Hardware Interface</span>
+          </div>
+          <p class="project-entry-desc">
+            A browser-native tool for designing and writing custom NFC tag payloads — keyboard shortcuts, URL launchers,
+            and multi-step macro sequences — using the Web NFC API. Writes directly to physical NFC tags from the browser
+            without any native app or driver. Demonstrates hands-on knowledge of NFC/RFID protocols and modern browser hardware APIs.
+          </p>
+          <div class="project-skills">
+            <span class="project-skill">Web NFC API</span>
+            <span class="project-skill">JavaScript</span>
+            <span class="project-skill">NFC / RFID</span>
+            <span class="project-skill">NDEF Protocol</span>
+          </div>
+        </div>
+
+        <div class="card project-entry">
+          <div class="project-entry-header">
+            <span class="project-entry-name">PCBCard — Passive NFC Business Card</span>
+            <span class="project-entry-tag">Hardware / PCB Design</span>
+          </div>
+          <p class="project-entry-desc">
+            Designed a fully passive NFC business card as a custom PCB — NTAG213 chip, portrait orientation,
+            black soldermask, ENIG gold finish. No battery, no components beyond the chip and antenna trace.
+            Demonstrates understanding of RF antenna design, PCB layout constraints, and production-ready
+            board specification for commercial fabrication.
+          </p>
+          <div class="project-skills">
+            <span class="project-skill">PCB Design</span>
+            <span class="project-skill">NTAG213</span>
+            <span class="project-skill">RF Antenna Layout</span>
+            <span class="project-skill">ENIG Finishing</span>
+            <span class="project-skill">Production Spec</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Engineering Approach -->
+    <section class="resume-section">
+      <h2 class="resume-section-title">Engineering Approach</h2>
+      <div class="approach-box">
+        <p>
+          <strong>I learn by building.</strong> Every technical skill I've developed came from identifying a specific problem,
+          researching the solution space, and executing a real project against a real goal. This approach consistently
+          produces engineers who understand systems deeply — not just the layer they were taught — because every
+          abstraction was encountered and worked through in context.
+        </p>
+        <p>
+          The result is an unusually broad and integrated skill set: I can design the PCB, write the firmware,
+          build the software stack, and fabricate the enclosure without handing off between disciplines. I bring
+          the same mindset to any new domain — <strong>fast ramp, full ownership, working result.</strong>
+        </p>
+      </div>
+    </section>
+
+    <!-- Work History placeholder -->
+    <section class="resume-section">
+      <h2 class="resume-section-title">Work History</h2>
+      <p style="color: var(--text-dim); font-size: 0.9rem; font-style: italic;">Available upon request.</p>
+    </section>
+
+    <div class="resume-footer-note">
+      Jake Lewien &nbsp;·&nbsp; Engineering Resume &nbsp;·&nbsp; 2026
+    </div>
+
+  </main>
+
+  <script src="motion.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ratch — Jake Lewien</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <span class="nav-name">Jake Lewien</span>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="projects.html" class="active">Projects</a>
+      <a href="downloads.html">Downloads</a>
+      <a href="nfc-macros.html">NFC Macros</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <a href="projects.html" class="back-link">&larr; All Projects</a>
+
+    <div class="project-header">
+      <div class="card-tag">Robotics / AI</div>
+      <h1>Ratch</h1>
+      <span class="status in-progress">In Progress</span>
+    </div>
+
+    <div class="project-body">
+      <p>Ratch is a voice-activated workshop droid with an attitude. Built around a 3D printed Pit Droid-inspired body, Ratch communicates entirely through voice — no screen — and expresses itself physically through seven servos controlling its head, arms, antenna, and torso.</p>
+      <p>All AI processing runs locally: a laptop on the network handles speech recognition via Whisper, language generation via LLaMA 3.2, and voice synthesis tuned to match Ratch's personality. A Raspberry Pi on the droid itself manages audio I/O, servo control, and communication with the server — keeping the cloud out of the loop entirely.</p>
+    </div>
+
+    <div class="tech-tags">
+      <span class="tech-tag">Raspberry Pi</span>
+      <span class="tech-tag">Ollama / LLaMA 3.2</span>
+      <span class="tech-tag">Whisper STT</span>
+      <span class="tech-tag">FastAPI</span>
+      <span class="tech-tag">Python</span>
+      <span class="tech-tag">3D Printed</span>
+    </div>
+
+    <h2 class="section-title">Roadmap</h2>
+    <ul class="roadmap">
+      <li class="done">Concept &amp; Hardware Specification</li>
+      <li class="done">AI Server (Whisper + LLaMA + TTS)</li>
+      <li class="active">Raspberry Pi Software Stack</li>
+      <li>Electronics Assembly &amp; Wiring</li>
+      <li>Servo Test Rig</li>
+      <li>3D Print &amp; Final Assembly</li>
+    </ul>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Jake Lewien</p>
+  </footer>
+  <script src="motion.js"></script>
+</body>
+</html>
