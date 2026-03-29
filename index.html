@@ -56,6 +56,129 @@
       </div>
     </section>
 
+    <!-- Start a Project -->
+    <section class="home-section">
+      <div class="home-section-inner">
+        <h2 class="section-heading" style="text-align:center;margin-bottom:3rem;">Start a Project</h2>
+        <div class="qr-layout reveal">
+
+          <!-- Left: How It Works -->
+          <div class="qr-side qr-side-left">
+            <div class="qr-side-label">How It Works</div>
+            <ol class="qr-steps">
+              <li>
+                <div>
+                  <strong>Describe your project</strong>
+                  <p>Fill out the form with your project type, description, and timeline. Takes about two minutes.</p>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>Get a custom quote</strong>
+                  <p>Your request is reviewed within 24 hours and a detailed quote is prepared in your private portal.</p>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>Approve and kick off</strong>
+                  <p>Accept the quote, track milestones, and communicate directly through your client dashboard.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <!-- Center: Form -->
+          <div class="qr-center">
+            <div class="qr-card">
+
+              <div id="qrFormWrap">
+                <h3 class="qr-card-title">Request a Quote</h3>
+                <p class="qr-card-sub">Fill out the form to submit your project request and create your client portal account.</p>
+
+                <form id="quoteRequestForm" novalidate>
+                  <div class="qr-row">
+                    <div class="qr-group">
+                      <label class="qr-label">Full Name *</label>
+                      <input type="text" class="qr-input" id="qrName" required autocomplete="name">
+                    </div>
+                    <div class="qr-group">
+                      <label class="qr-label">Company</label>
+                      <input type="text" class="qr-input" id="qrCompany" autocomplete="organization">
+                    </div>
+                  </div>
+                  <div class="qr-group">
+                    <label class="qr-label">Email *</label>
+                    <input type="email" class="qr-input" id="qrEmail" required autocomplete="email">
+                  </div>
+                  <div class="qr-group">
+                    <label class="qr-label">Password *</label>
+                    <input type="password" class="qr-input" id="qrPassword" placeholder="Create a portal password (min. 6 chars)" required minlength="6" autocomplete="new-password">
+                  </div>
+                  <div class="qr-group">
+                    <label class="qr-label">Project Type *</label>
+                    <div class="qr-types">
+                      <label class="qr-type-btn"><input type="radio" name="projectType" value="Site Creation" required>Site Creation</label>
+                      <label class="qr-type-btn"><input type="radio" name="projectType" value="3D Design">3D Design</label>
+                      <label class="qr-type-btn"><input type="radio" name="projectType" value="PCB Design">PCB Design</label>
+                      <label class="qr-type-btn"><input type="radio" name="projectType" value="Software">Software</label>
+                      <label class="qr-type-btn"><input type="radio" name="projectType" value="Other">Other</label>
+                    </div>
+                  </div>
+                  <div class="qr-group">
+                    <label class="qr-label">Project Description *</label>
+                    <textarea class="qr-input qr-textarea" id="qrDesc" placeholder="What are you looking to build?" required rows="3"></textarea>
+                  </div>
+                  <div class="qr-group">
+                    <label class="qr-label">Timeline</label>
+                    <input type="text" class="qr-input" id="qrTimeline" placeholder="e.g. 4–6 weeks, by June, flexible">
+                  </div>
+                  <div class="qr-group">
+                    <label class="qr-label">Additional Notes</label>
+                    <textarea class="qr-input qr-textarea" id="qrNotes" placeholder="Anything else I should know?" rows="2"></textarea>
+                  </div>
+                  <div class="qr-error" id="qrError"></div>
+                  <button type="submit" class="btn qr-submit" id="qrSubmitBtn">Submit Request &amp; Create Account</button>
+                </form>
+
+                <p class="qr-login-hint">Already have an account? <a href="portal/index.html">Log in to your portal →</a></p>
+              </div>
+
+              <div class="qr-success" id="qrSuccess">
+                <div class="qr-success-icon">✓</div>
+                <h3>Request Submitted</h3>
+                <p>Your account has been created and your request is on its way. Redirecting you to your portal…</p>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right: What You Get -->
+          <div class="qr-side qr-side-right">
+            <div class="qr-side-label">What You Get</div>
+            <ul class="qr-features">
+              <li>
+                <strong>Private Client Portal</strong>
+                <p>Track your project's progress, milestones, and status in real time from your own dashboard.</p>
+              </li>
+              <li>
+                <strong>Direct Messaging</strong>
+                <p>Communicate directly — no forms, no ticketing systems. Tag messages to specific projects.</p>
+              </li>
+              <li>
+                <strong>Transparent Quotes</strong>
+                <p>Itemized quotes reviewed and approved before any work begins. No surprises.</p>
+              </li>
+              <li>
+                <strong>Full Visibility</strong>
+                <p>Every milestone, invoice, and deliverable in one place, visible to you at any time.</p>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
     <!-- Featured Projects -->
     <section class="home-section">
       <div class="home-section-inner">
@@ -96,5 +219,89 @@
     <p>&copy; 2026 Jake Lewien</p>
   </footer>
   <script src="motion.js"></script>
+  <script type="module">
+    import { auth, db } from './portal/firebase-config.js';
+    import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { doc, setDoc, addDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    document.getElementById('quoteRequestForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name      = document.getElementById('qrName').value.trim();
+      const company   = document.getElementById('qrCompany').value.trim();
+      const email     = document.getElementById('qrEmail').value.trim();
+      const password  = document.getElementById('qrPassword').value;
+      const desc      = document.getElementById('qrDesc').value.trim();
+      const timeline  = document.getElementById('qrTimeline').value.trim();
+      const notes     = document.getElementById('qrNotes').value.trim();
+      const typeEl    = document.querySelector('input[name="projectType"]:checked');
+      const errorEl   = document.getElementById('qrError');
+      const btn       = document.getElementById('qrSubmitBtn');
+
+      errorEl.classList.remove('visible');
+
+      if (!name || !email || !password || !desc || !typeEl) {
+        errorEl.textContent = 'Please fill in all required fields and select a project type.';
+        errorEl.classList.add('visible');
+        return;
+      }
+      if (password.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters.';
+        errorEl.classList.add('visible');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      try {
+        // 1. Create auth account (signs them in automatically)
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+        const projectType = typeEl.value;
+
+        // 2. Create user doc
+        await setDoc(doc(db, 'users', uid), {
+          name, email, role: 'client', createdAt: serverTimestamp()
+        });
+
+        // 3. Create client doc
+        const clientRef = await addDoc(collection(db, 'clients'), {
+          userId: uid, name, email, company: company || '', createdAt: serverTimestamp()
+        });
+
+        // 4. Create quote request
+        await addDoc(collection(db, 'quoteRequests'), {
+          clientId: clientRef.id, name, email, company: company || '',
+          projectType, description: desc, timeline: timeline || '', notes: notes || '',
+          status: 'new', createdAt: serverTimestamp()
+        });
+
+        // 5. Create opening message so admin sees it in the message center
+        const msgContent = `Quote Request — ${projectType}\n\n${desc}${timeline ? '\n\nTimeline: ' + timeline : ''}${notes ? '\n\nNotes: ' + notes : ''}`;
+        await addDoc(collection(db, 'messages'), {
+          clientId: clientRef.id, senderId: uid, senderRole: 'client',
+          content: msgContent, projectId: '', projectName: '', read: false,
+          createdAt: serverTimestamp()
+        });
+
+        // Show success state, redirect to portal
+        document.getElementById('qrFormWrap').style.display = 'none';
+        document.getElementById('qrSuccess').classList.add('visible');
+        setTimeout(() => { window.location.href = 'portal/dashboard.html'; }, 2000);
+
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          errorEl.innerHTML = 'An account with this email already exists. <a href="portal/index.html" style="color:var(--blue-bright);">Log in to your portal →</a>';
+        } else if (err.code === 'auth/weak-password') {
+          errorEl.textContent = 'Password must be at least 6 characters.';
+        } else {
+          errorEl.textContent = 'Something went wrong. Please try again.';
+        }
+        errorEl.classList.add('visible');
+        btn.disabled = false;
+        btn.textContent = 'Submit Request & Create Account';
+      }
+    });
+  </script>
 </body>
 </html>

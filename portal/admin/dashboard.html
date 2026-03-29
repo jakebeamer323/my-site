@@ -45,9 +45,9 @@
           <div class="stat-label">Active Projects</div>
           <div class="stat-value" id="statProjects">—</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Open Quotes</div>
-          <div class="stat-value" id="statQuotes">—</div>
+        <div class="stat-card" style="cursor:pointer;" onclick="window.location.href='requests.html'">
+          <div class="stat-label">New Requests <span class="unread-dot" id="reqStatDot" style="display:none;vertical-align:middle;margin-left:4px;"></span></div>
+          <div class="stat-value" id="statRequests">—</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Unread Messages</div>
@@ -101,16 +101,17 @@
     });
 
     async function loadStats() {
-      const [clients, projects, quotes, messages] = await Promise.all([
+      const [clients, projects, requests, messages] = await Promise.all([
         getDocs(collection(db, 'clients')),
         getDocs(query(collection(db, 'projects'), where('status', '==', 'in-progress'))),
-        getDocs(query(collection(db, 'quotes'), where('status', '==', 'sent'))),
+        getDocs(query(collection(db, 'quoteRequests'), where('status', '==', 'new'))),
         getDocs(query(collection(db, 'messages'), where('senderRole', '==', 'client'), where('read', '==', false)))
       ]);
       document.getElementById('statClients').textContent = clients.size;
       document.getElementById('statProjects').textContent = projects.size;
-      document.getElementById('statQuotes').textContent = quotes.size;
+      document.getElementById('statRequests').textContent = requests.size;
       document.getElementById('statMessages').textContent = messages.size;
+      if (requests.size > 0) { document.getElementById('reqStatDot').style.display = 'inline-block'; document.getElementById('reqDot').style.display = 'inline-block'; }
       if (messages.size > 0) document.getElementById('unreadDot').style.display = 'inline-block';
     }
 
