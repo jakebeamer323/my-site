@@ -295,7 +295,7 @@
         } else if (err.code === 'auth/weak-password') {
           errorEl.textContent = 'Password must be at least 6 characters.';
         } else {
-          errorEl.textContent = 'Something went wrong. Please try again.';
+          errorEl.textContent = `Error (${err.code || 'unknown'}): ${err.message}`;
         }
         errorEl.classList.add('visible');
         btn.disabled = false;
