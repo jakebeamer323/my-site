@@ -4,18 +4,16 @@ import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.14.1/firebas
 import { getStorage } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCnYr2KjdKBAO2yx_TQbh_ewD5lt0PrUyo",
-  authDomain: "jakelewien-portal.firebaseapp.com",
-  projectId: "jakelewien-portal",
-  storageBucket: "jakelewien-portal.firebasestorage.app",
-  messagingSenderId: "704826342918",
-  appId: "1:704826342918:web:151902cac11f5863728d87",
-  measurementId: "G-LT8QET5PBP"
+  apiKey:            "FIREBASE_API_KEY_PLACEHOLDER",
+  authDomain:        "FIREBASE_AUTH_DOMAIN_PLACEHOLDER",
+  projectId:         "FIREBASE_PROJECT_ID_PLACEHOLDER",
+  storageBucket:     "FIREBASE_STORAGE_BUCKET_PLACEHOLDER",
+  messagingSenderId: "FIREBASE_MESSAGING_SENDER_ID_PLACEHOLDER",
+  appId:             "FIREBASE_APP_ID_PLACEHOLDER",
+  measurementId:     "FIREBASE_MEASUREMENT_ID_PLACEHOLDER"
 };
 
 const app = initializeApp(firebaseConfig);
-
-// Secondary app instance — used by admin to create client accounts without signing themselves out
 const secondaryApp = initializeApp(firebaseConfig, 'secondary');
 
 export const auth = getAuth(app);
