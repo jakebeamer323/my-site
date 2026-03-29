@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages — Client Portal</title>
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <a href="dashboard.html" class="nav-brand">Jake Lewien <span>| Portal</span></a>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="messages.html" class="active">Messages</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-user-name" id="userName"></span>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <div class="portal-page">
+    <div class="portal-content">
+
+      <div class="page-header">
+        <div>
+          <h1>Messages</h1>
+          <p>Your conversation with Jake</p>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <!-- Thread -->
+        <div id="threadContainer" style="padding:24px;min-height:300px;max-height:520px;overflow-y:auto;">
+          <div class="empty-state"><p>Loading messages…</p></div>
+        </div>
+
+        <!-- Compose -->
+        <div style="border-top:1px solid var(--border);padding:20px;">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">Tag a project (optional)</label>
+            <select class="form-select" id="projectSelect">
+              <option value="">— No project —</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" class="form-input" id="messageInput" placeholder="Type a message…">
+            <button class="btn btn-primary" id="sendBtn">Send</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { doc, getDoc, collection, query, where, orderBy, onSnapshot, addDoc, getDocs, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const preTagProject = params.get('project');
+
+    let clientId = null;
+    let userId = null;
+    let unsubMessages = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { window.location.href = 'index.html'; return; }
+
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) { window.location.href = 'index.html'; return; }
+      const userData = userDoc.data();
+      if (userData.role === 'admin') { window.location.href = 'admin/messages.html'; return; }
+
+      userId = user.uid;
+      document.getElementById('userName').textContent = userData.name || user.email;
+
+      const clientQ = query(collection(db, 'clients'), where('userId', '==', user.uid));
+      const clientSnap = await getDocs(clientQ);
+      if (clientSnap.empty) { window.location.href = 'dashboard.html'; return; }
+      clientId = clientSnap.docs[0].id;
+
+      await loadProjects();
+      subscribeMessages();
+      markAdminMessagesRead();
+    });
+
+    async function loadProjects() {
+      const q = query(collection(db, 'projects'), where('clientId', '==', clientId));
+      const snap = await getDocs(q);
+      const select = document.getElementById('projectSelect');
+      snap.docs.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = d.data().name;
+        select.appendChild(opt);
+      });
+      if (preTagProject) select.value = preTagProject;
+    }
+
+    function subscribeMessages() {
+      if (unsubMessages) unsubMessages();
+      const q = query(collection(db, 'messages'), where('clientId', '==', clientId), orderBy('createdAt', 'asc'));
+      unsubMessages = onSnapshot(q, (snap) => {
+        const container = document.getElementById('threadContainer');
+        if (snap.empty) {
+          container.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><p>No messages yet. Send one below!</p></div>';
+          return;
+        }
+        container.innerHTML = `<div class="message-thread">
+          ${snap.docs.map(d => {
+            const m = d.data();
+            const isAdmin = m.senderRole === 'admin';
+            const projectTag = m.projectName ? `<div class="message-project-tag">re: ${escHtml(m.projectName)}</div>` : '';
+            return `<div class="message-wrap ${isAdmin ? 'from-admin' : ''}">
+              <div class="message-bubble ${isAdmin ? 'from-admin' : 'from-client'}">
+                ${projectTag}${escHtml(m.content)}
+              </div>
+              <div class="message-meta">${isAdmin ? 'Jake' : 'You'} · ${formatDate(m.createdAt)}</div>
+            </div>`;
+          }).join('')}
+        </div>`;
+        container.scrollTop = container.scrollHeight;
+        markAdminMessagesRead();
+      });
+    }
+
+    async function markAdminMessagesRead() {
+      if (!clientId) return;
+      const q = query(collection(db, 'messages'), where('clientId', '==', clientId), where('senderRole', '==', 'admin'), where('read', '==', false));
+      const snap = await getDocs(q);
+      snap.docs.forEach(d => updateDoc(d.ref, { read: true }));
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const content = input.value.trim();
+      if (!content) return;
+
+      const projectId = document.getElementById('projectSelect').value;
+      let projectName = '';
+      if (projectId) {
+        const projDoc = await getDoc(doc(db, 'projects', projectId));
+        if (projDoc.exists()) projectName = projDoc.data().name;
+      }
+
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = true;
+
+      try {
+        await addDoc(collection(db, 'messages'), {
+          clientId,
+          senderId: userId,
+          senderRole: 'client',
+          content,
+          projectId: projectId || '',
+          projectName: projectName || '',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+        input.value = '';
+      } catch (err) {
+        showToast('Failed to send. Try again.', 'error');
+      }
+      btn.disabled = false;
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      if (unsubMessages) unsubMessages();
+      await signOut(auth);
+      window.location.href = 'index.html';
+    });
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    function formatDate(val) {
+      if (!val) return '';
+      const d = val?.toDate ? val.toDate() : new Date(val);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+
+</body>
+</html>

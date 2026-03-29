@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clients — Admin Portal</title>
+  <link rel="stylesheet" href="../portal.css">
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <a href="dashboard.html" class="nav-brand">Jake Lewien <span>| Admin</span></a>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="clients.html" class="active">Clients</a>
+      <a href="quote.html">Quotes</a>
+      <a href="invoice.html">Invoices</a>
+      <a href="messages.html">Messages</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-user-name" id="userName"></span>
+      <span class="admin-badge">Admin</span>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <div class="portal-page">
+    <div class="portal-content">
+
+      <div class="page-header">
+        <div><h1>Clients</h1><p id="clientCount"></p></div>
+        <button class="btn btn-primary" id="newClientBtn">+ New Client</button>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <div id="clientsContainer"><div class="empty-state" style="padding:48px;"><p>Loading…</p></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- New Client Modal -->
+  <div class="modal-overlay" id="newClientModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">New Client</span>
+        <button class="modal-close" id="closeModal">×</button>
+      </div>
+      <form id="newClientForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" class="form-input" id="clientName" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Company</label>
+            <input type="text" class="form-input" id="clientCompany">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" class="form-input" id="clientEmail" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Temporary Password *</label>
+          <input type="text" class="form-input" id="clientPassword" required placeholder="They should change this on first login">
+        </div>
+        <div class="form-error" id="clientFormError"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn btn-outline" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="createClientBtn">Create Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { auth, db, secondaryAuth } from '../firebase-config.js';
+    import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signOut as secSignOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { doc, getDoc, setDoc, collection, getDocs, orderBy, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { window.location.href = '../index.html'; return; }
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists() || userDoc.data().role !== 'admin') { window.location.href = '../index.html'; return; }
+      document.getElementById('userName').textContent = userDoc.data().name || user.email;
+      await loadClients();
+    });
+
+    async function loadClients() {
+      const snap = await getDocs(query(collection(db, 'clients'), orderBy('name')));
+      document.getElementById('clientCount').textContent = `${snap.size} client${snap.size !== 1 ? 's' : ''}`;
+
+      const container = document.getElementById('clientsContainer');
+      if (snap.empty) {
+        container.innerHTML = '<div class="empty-state" style="padding:48px;"><div class="empty-icon">👤</div><p>No clients yet. Create your first one.</p></div>';
+        return;
+      }
+
+      // Get project counts per client
+      const projSnap = await getDocs(collection(db, 'projects'));
+      const projCounts = {};
+      projSnap.docs.forEach(d => {
+        const cid = d.data().clientId;
+        projCounts[cid] = (projCounts[cid] || 0) + 1;
+      });
+
+      container.innerHTML = `<table class="data-table">
+        <thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Projects</th><th></th></tr></thead>
+        <tbody>
+          ${snap.docs.map(d => {
+            const c = d.data();
+            return `<tr onclick="window.location.href='project.html?client=${d.id}'">
+              <td><strong>${c.name}</strong></td>
+              <td style="color:var(--text-muted);font-size:13px;">${c.company || '—'}</td>
+              <td style="color:var(--text-muted);font-size:13px;">${c.email}</td>
+              <td style="color:var(--text-muted);font-size:13px;">${projCounts[d.id] || 0}</td>
+              <td style="text-align:right;">
+                <a class="btn btn-outline btn-sm" href="project.html?client=${d.id}" onclick="event.stopPropagation()">+ Project</a>
+                <a class="btn btn-outline btn-sm" href="messages.html?client=${d.id}" onclick="event.stopPropagation()" style="margin-left:4px;">Message</a>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    // Modal
+    document.getElementById('newClientBtn').addEventListener('click', () => document.getElementById('newClientModal').classList.add('open'));
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('cancelModal').addEventListener('click', closeModal);
+    function closeModal() { document.getElementById('newClientModal').classList.remove('open'); document.getElementById('newClientForm').reset(); document.getElementById('clientFormError').classList.remove('visible'); }
+
+    document.getElementById('newClientForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name    = document.getElementById('clientName').value.trim();
+      const company = document.getElementById('clientCompany').value.trim();
+      const email   = document.getElementById('clientEmail').value.trim();
+      const password = document.getElementById('clientPassword').value;
+      const errorEl = document.getElementById('clientFormError');
+      const btn     = document.getElementById('createClientBtn');
+
+      errorEl.classList.remove('visible');
+      btn.disabled = true;
+      btn.textContent = 'Creating…';
+
+      try {
+        // Create auth user via secondary app (doesn't sign out admin)
+        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        const newUid = cred.user.uid;
+        await secSignOut(secondaryAuth);
+
+        // Create Firestore documents
+        await setDoc(doc(db, 'users', newUid), {
+          name, email, role: 'client', createdAt: serverTimestamp()
+        });
+        const clientRef = doc(collection(db, 'clients'));
+        await setDoc(clientRef, {
+          userId: newUid, name, email, company: company || '', createdAt: serverTimestamp()
+        });
+
+        showToast(`Client "${name}" created.`);
+        closeModal();
+        await loadClients();
+      } catch (err) {
+        errorEl.textContent = err.code === 'auth/email-already-in-use'
+          ? 'This email is already registered.'
+          : `Error: ${err.message}`;
+        errorEl.classList.add('visible');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Create Client';
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => { await signOut(auth); window.location.href = '../index.html'; });
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+  </script>
+
+</body>
+</html>

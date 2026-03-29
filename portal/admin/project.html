@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project — Admin Portal</title>
+  <link rel="stylesheet" href="../portal.css">
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <a href="dashboard.html" class="nav-brand">Jake Lewien <span>| Admin</span></a>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="clients.html">Clients</a>
+      <a href="quote.html">Quotes</a>
+      <a href="invoice.html">Invoices</a>
+      <a href="messages.html">Messages</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-user-name" id="userName"></span>
+      <span class="admin-badge">Admin</span>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <div class="portal-page">
+    <div class="portal-content">
+
+      <a href="clients.html" class="back-link">← Back to Clients</a>
+
+      <div class="page-header">
+        <h1 id="pageTitle">New Project</h1>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-danger btn-sm" id="deleteBtn" style="display:none;">Delete Project</button>
+          <button class="btn btn-primary" id="saveBtn">Save Project</button>
+        </div>
+      </div>
+
+      <div class="grid-2" style="align-items:start;gap:20px;">
+
+        <!-- Left: Project Details -->
+        <div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Project Details</span></div>
+
+            <div class="form-group">
+              <label class="form-label">Client *</label>
+              <select class="form-select" id="clientSelect" required>
+                <option value="">— Select client —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Project Name *</label>
+              <input type="text" class="form-input" id="projectName" placeholder="e.g. Brand Identity Package" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="projectStatus">
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="review">In Review</option>
+                  <option value="complete">Complete</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-input" id="projectStart">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea class="form-textarea" id="projectDesc" placeholder="Project scope and notes…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Milestones -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Milestones</span>
+              <button class="btn btn-outline btn-sm" id="addMilestoneBtn">+ Add</button>
+            </div>
+            <div id="milestonesList"><div class="empty-state" style="padding:24px 0;"><p>No milestones yet.</p></div></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { auth, db } from '../firebase-config.js';
+    import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { doc, getDoc, setDoc, addDoc, deleteDoc, collection, getDocs, orderBy, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id');
+    const preClient = params.get('client');
+
+    let milestones = [];
+    let milestoneCounter = 0;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { window.location.href = '../index.html'; return; }
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists() || userDoc.data().role !== 'admin') { window.location.href = '../index.html'; return; }
+      document.getElementById('userName').textContent = userDoc.data().name || user.email;
+
+      await loadClients();
+      if (projectId) {
+        document.getElementById('pageTitle').textContent = 'Edit Project';
+        document.getElementById('deleteBtn').style.display = '';
+        await loadProject();
+      } else if (preClient) {
+        document.getElementById('clientSelect').value = preClient;
+      }
+    });
+
+    async function loadClients() {
+      const snap = await getDocs(query(collection(db, 'clients'), orderBy('name')));
+      const select = document.getElementById('clientSelect');
+      snap.docs.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = d.data().name;
+        select.appendChild(opt);
+      });
+    }
+
+    async function loadProject() {
+      const projDoc = await getDoc(doc(db, 'projects', projectId));
+      if (!projDoc.exists()) { window.location.href = 'clients.html'; return; }
+      const p = projDoc.data();
+      document.getElementById('clientSelect').value = p.clientId || '';
+      document.getElementById('projectName').value = p.name || '';
+      document.getElementById('projectStatus').value = p.status || 'pending';
+      document.getElementById('projectDesc').value = p.description || '';
+      if (p.startDate) {
+        const d = p.startDate?.toDate ? p.startDate.toDate() : new Date(p.startDate);
+        document.getElementById('projectStart').value = d.toISOString().split('T')[0];
+      }
+      milestones = (p.milestones || []).map(m => ({ ...m, _key: milestoneCounter++ }));
+      renderMilestones();
+    }
+
+    function renderMilestones() {
+      const container = document.getElementById('milestonesList');
+      if (milestones.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding:24px 0;"><p>No milestones yet.</p></div>';
+        return;
+      }
+      container.innerHTML = `<div class="milestone-list">
+        ${milestones.map((m, i) => `
+          <div class="milestone-item" data-key="${m._key}">
+            <div class="milestone-check ${m.status === 'done' ? 'done' : ''}" onclick="toggleMilestone(${i})"></div>
+            <input type="text" value="${escHtml(m.title)}" placeholder="Milestone title"
+              class="form-input" style="flex:1;padding:6px 10px;font-size:13px;"
+              oninput="updateMilestoneTitle(${i}, this.value)">
+            <input type="date" value="${m.dueDate || ''}" class="form-input"
+              style="width:140px;padding:6px 10px;font-size:13px;"
+              oninput="updateMilestoneDue(${i}, this.value)">
+            <button class="remove-row-btn" onclick="removeMilestone(${i})">×</button>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    window.toggleMilestone = (i) => {
+      milestones[i].status = milestones[i].status === 'done' ? 'pending' : 'done';
+      renderMilestones();
+    };
+    window.updateMilestoneTitle = (i, v) => { milestones[i].title = v; };
+    window.updateMilestoneDue = (i, v) => { milestones[i].dueDate = v; };
+    window.removeMilestone = (i) => { milestones.splice(i, 1); renderMilestones(); };
+
+    document.getElementById('addMilestoneBtn').addEventListener('click', () => {
+      milestones.push({ _key: milestoneCounter++, title: '', status: 'pending', dueDate: '' });
+      renderMilestones();
+      // Focus the new input
+      const inputs = document.querySelectorAll('#milestonesList .form-input[type="text"]');
+      inputs[inputs.length - 1]?.focus();
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const clientId = document.getElementById('clientSelect').value;
+      const name = document.getElementById('projectName').value.trim();
+      if (!clientId || !name) { showToast('Client and name are required.', 'error'); return; }
+
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const startVal = document.getElementById('projectStart').value;
+      const data = {
+        clientId,
+        name,
+        status: document.getElementById('projectStatus').value,
+        description: document.getElementById('projectDesc').value.trim(),
+        startDate: startVal ? new Date(startVal) : null,
+        milestones: milestones.map(({ title, status, dueDate }) => ({ title, status, dueDate: dueDate || '' })),
+        updatedAt: serverTimestamp()
+      };
+
+      try {
+        if (projectId) {
+          await setDoc(doc(db, 'projects', projectId), data, { merge: true });
+          showToast('Project saved.');
+        } else {
+          data.createdAt = serverTimestamp();
+          const ref = await addDoc(collection(db, 'projects'), data);
+          showToast('Project created.');
+          window.history.replaceState({}, '', `project.html?id=${ref.id}`);
+          document.getElementById('pageTitle').textContent = 'Edit Project';
+          document.getElementById('deleteBtn').style.display = '';
+        }
+      } catch (err) {
+        showToast('Failed to save. ' + err.message, 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save Project';
+    });
+
+    document.getElementById('deleteBtn').addEventListener('click', async () => {
+      if (!confirm('Delete this project? This cannot be undone.')) return;
+      await deleteDoc(doc(db, 'projects', projectId));
+      window.location.href = 'clients.html';
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => { await signOut(auth); window.location.href = '../index.html'; });
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    function escHtml(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+
+</body>
+</html>

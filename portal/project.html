@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project — Client Portal</title>
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <a href="dashboard.html" class="nav-brand">Jake Lewien <span>| Portal</span></a>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="messages.html">Messages</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-user-name" id="userName"></span>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <div class="portal-page">
+    <div class="portal-content">
+
+      <a href="dashboard.html" class="back-link">← Back to Dashboard</a>
+
+      <div class="page-header">
+        <div>
+          <h1 id="projectName">Loading…</h1>
+          <p id="projectDates"></p>
+        </div>
+        <span class="badge" id="statusBadge"></span>
+      </div>
+
+      <!-- Description -->
+      <div class="card" id="descCard" style="display:none;">
+        <div class="card-header"><span class="card-title">Description</span></div>
+        <p id="projectDesc" style="font-size:14px;color:var(--text-muted);line-height:1.65;"></p>
+      </div>
+
+      <!-- Milestones -->
+      <div class="card section-gap">
+        <div class="card-header"><span class="card-title">Milestones</span></div>
+        <div id="milestonesContainer"><div class="empty-state"><p>Loading…</p></div></div>
+      </div>
+
+      <!-- Quotes & Invoices -->
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Quotes</span></div>
+          <div id="quotesContainer"><div class="empty-state"><p>Loading…</p></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Invoices</span></div>
+          <div id="invoicesContainer"><div class="empty-state"><p>Loading…</p></div></div>
+        </div>
+      </div>
+
+      <!-- Messages for this project -->
+      <div class="card section-gap">
+        <div class="card-header">
+          <span class="card-title">Messages About This Project</span>
+          <a id="viewAllMessages" href="messages.html" class="btn btn-outline btn-sm">View All Messages</a>
+        </div>
+        <div id="projectMessages"><div class="empty-state"><p>Loading…</p></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id');
+    if (!projectId) window.location.href = 'dashboard.html';
+
+    let clientId = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { window.location.href = 'index.html'; return; }
+
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) { window.location.href = 'index.html'; return; }
+      const userData = userDoc.data();
+      if (userData.role === 'admin') { window.location.href = 'admin/project.html?id=' + projectId; return; }
+
+      document.getElementById('userName').textContent = userData.name || user.email;
+
+      // Get clientId
+      const clientQ = query(collection(db, 'clients'), where('userId', '==', user.uid));
+      const clientSnap = await getDocs(clientQ);
+      if (clientSnap.empty) { window.location.href = 'dashboard.html'; return; }
+      clientId = clientSnap.docs[0].id;
+
+      await loadProject();
+    });
+
+    async function loadProject() {
+      const projDoc = await getDoc(doc(db, 'projects', projectId));
+      if (!projDoc.exists() || projDoc.data().clientId !== clientId) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      const p = projDoc.data();
+
+      document.title = `${p.name} — Client Portal`;
+      document.getElementById('projectName').textContent = p.name;
+      document.getElementById('projectDates').textContent = `Started ${formatDate(p.startDate)}`;
+
+      const badge = document.getElementById('statusBadge');
+      badge.textContent = p.status;
+      badge.className = `badge ${badgeClass(p.status)}`;
+
+      if (p.description) {
+        document.getElementById('descCard').style.display = '';
+        document.getElementById('projectDesc').textContent = p.description;
+      }
+
+      renderMilestones(p.milestones || []);
+      await Promise.all([loadQuotes(), loadInvoices(), loadMessages()]);
+
+      // Update messages link to pre-tag this project
+      document.getElementById('viewAllMessages').href = `messages.html?project=${projectId}`;
+    }
+
+    function renderMilestones(milestones) {
+      const container = document.getElementById('milestonesContainer');
+      if (milestones.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No milestones set yet.</p></div>';
+        return;
+      }
+      container.innerHTML = `<div class="milestone-list">
+        ${milestones.map(m => `
+          <div class="milestone-item">
+            <div class="milestone-check ${m.status === 'done' ? 'done' : ''}"></div>
+            <span class="milestone-title ${m.status === 'done' ? 'done' : ''}">${m.title}</span>
+            ${m.dueDate ? `<span class="milestone-due">${formatDate(m.dueDate)}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    async function loadQuotes() {
+      const q = query(collection(db, 'quotes'), where('clientId', '==', clientId), where('projectId', '==', projectId));
+      const snap = await getDocs(q);
+      const visible = snap.docs.filter(d => d.data().status !== 'draft');
+      const container = document.getElementById('quotesContainer');
+      if (visible.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No quotes.</p></div>';
+        return;
+      }
+      container.innerHTML = `<table class="data-table">
+        <thead><tr><th>Date</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+          ${visible.map(d => {
+            const q = d.data();
+            return `<tr class="no-hover">
+              <td style="font-size:13px;">${formatDate(q.createdAt)}</td>
+              <td><strong>${formatCurrency(q.total)}</strong></td>
+              <td><span class="badge ${badgeClass(q.status)}">${q.status}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    async function loadInvoices() {
+      const q = query(collection(db, 'invoices'), where('clientId', '==', clientId), where('projectId', '==', projectId));
+      const snap = await getDocs(q);
+      const visible = snap.docs.filter(d => d.data().status !== 'draft');
+      const container = document.getElementById('invoicesContainer');
+      if (visible.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No invoices.</p></div>';
+        return;
+      }
+      container.innerHTML = `<table class="data-table">
+        <thead><tr><th>Due</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+          ${visible.map(d => {
+            const inv = d.data();
+            return `<tr class="no-hover">
+              <td style="font-size:13px;">${formatDate(inv.dueDate)}</td>
+              <td><strong>${formatCurrency(inv.total)}</strong></td>
+              <td><span class="badge ${badgeClass(inv.status)}">${inv.status}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    async function loadMessages() {
+      const q = query(collection(db, 'messages'), where('clientId', '==', clientId), where('projectId', '==', projectId), orderBy('createdAt', 'asc'));
+      const snap = await getDocs(q);
+      const container = document.getElementById('projectMessages');
+      if (snap.empty) {
+        container.innerHTML = '<div class="empty-state"><p>No messages about this project yet.</p></div>';
+        return;
+      }
+      container.innerHTML = `<div class="message-thread">
+        ${snap.docs.map(d => {
+          const m = d.data();
+          const isAdmin = m.senderRole === 'admin';
+          return `<div class="message-wrap ${isAdmin ? 'from-admin' : ''}">
+            <div class="message-bubble ${isAdmin ? 'from-admin' : 'from-client'}">${escHtml(m.content)}</div>
+            <div class="message-meta">${isAdmin ? 'Jake' : 'You'} · ${formatDate(m.createdAt)}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = 'index.html';
+    });
+
+    function badgeClass(s) {
+      const m = { 'pending':'badge-pending','in-progress':'badge-progress','review':'badge-review','complete':'badge-complete','draft':'badge-draft','sent':'badge-sent','accepted':'badge-accepted','declined':'badge-declined','paid':'badge-paid','overdue':'badge-overdue' };
+      return m[s] || 'badge-pending';
+    }
+    function formatDate(val) {
+      if (!val) return '—';
+      const d = val?.toDate ? val.toDate() : new Date(val);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    function formatCurrency(n) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0);
+    }
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+
+</body>
+</html>

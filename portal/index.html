@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Portal — Jake Lewien</title>
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+  <div class="login-page">
+    <div class="login-card">
+
+      <div class="login-logo">
+        <h1>Jake Lewien</h1>
+        <p>Client Portal</p>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="email" class="form-input" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="form-error" id="loginError"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;" id="loginBtn">
+          Sign In
+        </button>
+      </form>
+
+      <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--text-muted);">
+        Need access? Contact <a href="mailto:jake@jakelewien.com" style="color:var(--blue-bright);text-decoration:none;">jake@jakelewien.com</a>
+      </p>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    // If already logged in, redirect immediately
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await redirectByRole(user.uid);
+      }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('loginBtn');
+      const errorEl = document.getElementById('loginError');
+
+      errorEl.classList.remove('visible');
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        await redirectByRole(cred.user.uid);
+      } catch (err) {
+        errorEl.textContent = friendlyError(err.code);
+        errorEl.classList.add('visible');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+
+    async function redirectByRole(uid) {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists() && userDoc.data().role === 'admin') {
+        window.location.href = 'admin/dashboard.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    }
+
+    function friendlyError(code) {
+      switch (code) {
+        case 'auth/invalid-credential':
+        case 'auth/wrong-password':
+        case 'auth/user-not-found':
+          return 'Invalid email or password.';
+        case 'auth/too-many-requests':
+          return 'Too many attempts. Try again later.';
+        default:
+          return 'Something went wrong. Please try again.';
+      }
+    }
+  </script>
+
+</body>
+</html>

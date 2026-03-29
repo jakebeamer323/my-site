@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Client Portal</title>
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <a href="dashboard.html" class="nav-brand">Jake Lewien <span>| Portal</span></a>
+    <div class="nav-links">
+      <a href="dashboard.html" class="active">Dashboard</a>
+      <a href="messages.html">Messages <span class="unread-dot" id="unreadDot" style="display:none;"></span></a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-user-name" id="userName"></span>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <div class="portal-page">
+    <div class="portal-content">
+
+      <div class="page-header">
+        <div>
+          <h1 id="welcomeMsg">Welcome back</h1>
+          <p id="clientCompany"></p>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="grid-3" style="margin-bottom:28px;">
+        <div class="stat-card">
+          <div class="stat-label">Active Projects</div>
+          <div class="stat-value" id="statProjects">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open Quotes</div>
+          <div class="stat-value" id="statQuotes">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Unpaid Invoices</div>
+          <div class="stat-value" id="statInvoices">—</div>
+        </div>
+      </div>
+
+      <!-- Projects -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Your Projects</span>
+        </div>
+        <div id="projectsContainer">
+          <div class="empty-state"><p>Loading…</p></div>
+        </div>
+      </div>
+
+      <!-- Recent Quotes & Invoices -->
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Quotes</span>
+          </div>
+          <div id="quotesContainer">
+            <div class="empty-state"><p>Loading…</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Invoices</span>
+          </div>
+          <div id="invoicesContainer">
+            <div class="empty-state"><p>Loading…</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    let clientId = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { window.location.href = 'index.html'; return; }
+
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) { window.location.href = 'index.html'; return; }
+      const userData = userDoc.data();
+      if (userData.role === 'admin') { window.location.href = 'admin/dashboard.html'; return; }
+
+      document.getElementById('userName').textContent = userData.name || user.email;
+      document.getElementById('welcomeMsg').textContent = `Welcome back, ${userData.name?.split(' ')[0] || 'there'}`;
+
+      // Find client doc by userId
+      const clientQ = query(collection(db, 'clients'), where('userId', '==', user.uid));
+      const clientSnap = await getDocs(clientQ);
+      if (clientSnap.empty) { showEmpty(); return; }
+
+      const clientDoc = clientSnap.docs[0];
+      clientId = clientDoc.id;
+      const clientData = clientDoc.data();
+      if (clientData.company) document.getElementById('clientCompany').textContent = clientData.company;
+
+      await Promise.all([loadProjects(), loadQuotes(), loadInvoices(), checkUnread()]);
+    });
+
+    async function loadProjects() {
+      const q = query(collection(db, 'projects'), where('clientId', '==', clientId), orderBy('startDate', 'desc'));
+      const snap = await getDocs(q);
+      const container = document.getElementById('projectsContainer');
+
+      document.getElementById('statProjects').textContent = snap.docs.filter(d => d.data().status === 'in-progress').length;
+
+      if (snap.empty) {
+        container.innerHTML = '<div class="empty-state"><p>No projects yet.</p></div>';
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="data-table">
+          <thead><tr>
+            <th>Project</th><th>Status</th><th>Start Date</th><th>Milestones</th>
+          </tr></thead>
+          <tbody>
+            ${snap.docs.map(d => {
+              const p = d.data();
+              const done = (p.milestones || []).filter(m => m.status === 'done').length;
+              const total = (p.milestones || []).length;
+              return `<tr onclick="window.location.href='project.html?id=${d.id}'">
+                <td><strong>${p.name}</strong></td>
+                <td><span class="badge ${badgeClass(p.status)}">${p.status}</span></td>
+                <td>${formatDate(p.startDate)}</td>
+                <td style="color:var(--text-muted);font-size:13px;">${total ? `${done}/${total}` : '—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    async function loadQuotes() {
+      const q = query(collection(db, 'quotes'), where('clientId', '==', clientId), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      const visible = snap.docs.filter(d => d.data().status !== 'draft');
+      document.getElementById('statQuotes').textContent = visible.filter(d => d.data().status === 'sent').length;
+
+      const container = document.getElementById('quotesContainer');
+      if (visible.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No quotes yet.</p></div>';
+        return;
+      }
+      container.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody>
+            ${visible.map(d => {
+              const q = d.data();
+              return `<tr class="no-hover">
+                <td style="font-size:13px;">${formatDate(q.createdAt)}</td>
+                <td><strong>${formatCurrency(q.total)}</strong></td>
+                <td><span class="badge ${badgeClass(q.status)}">${q.status}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    async function loadInvoices() {
+      const q = query(collection(db, 'invoices'), where('clientId', '==', clientId), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      const visible = snap.docs.filter(d => d.data().status !== 'draft');
+      document.getElementById('statInvoices').textContent = visible.filter(d => ['sent','overdue'].includes(d.data().status)).length;
+
+      const container = document.getElementById('invoicesContainer');
+      if (visible.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No invoices yet.</p></div>';
+        return;
+      }
+      container.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Due Date</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody>
+            ${visible.map(d => {
+              const inv = d.data();
+              return `<tr class="no-hover">
+                <td style="font-size:13px;">${formatDate(inv.dueDate)}</td>
+                <td><strong>${formatCurrency(inv.total)}</strong></td>
+                <td><span class="badge ${badgeClass(inv.status)}">${inv.status}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    async function checkUnread() {
+      const q = query(collection(db, 'messages'), where('clientId', '==', clientId), where('senderRole', '==', 'admin'), where('read', '==', false));
+      const snap = await getDocs(q);
+      if (!snap.empty) document.getElementById('unreadDot').style.display = 'inline-block';
+    }
+
+    function showEmpty() {
+      document.getElementById('projectsContainer').innerHTML = '<div class="empty-state"><p>No data found for your account. Contact Jake to get set up.</p></div>';
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = 'index.html';
+    });
+
+    function badgeClass(s) {
+      const m = { 'pending':'badge-pending','in-progress':'badge-progress','review':'badge-review','complete':'badge-complete','draft':'badge-draft','sent':'badge-sent','accepted':'badge-accepted','declined':'badge-declined','paid':'badge-paid','overdue':'badge-overdue' };
+      return m[s] || 'badge-pending';
+    }
+    function formatDate(val) {
+      if (!val) return '—';
+      const d = val?.toDate ? val.toDate() : new Date(val);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    function formatCurrency(n) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0);
+    }
+  </script>
+
+</body>
+</html>
